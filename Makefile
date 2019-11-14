@@ -17,8 +17,8 @@ DOCKER_IMAGE=handcraftedbits/ezif-build:$(VERSION)
 
 FILE_DOCKERFILE=$(DIR_BASE)Dockerfile
 FILE_DOCKER_BUILT=$(DIR_BASE).docker-built
-FILE_EXIV2_METADATA=$(DIR_CMD_GENHELPER)/.exiv2metadata.json
-FILE_GENHELPER_CONFIG=$(DIR_CMD_GENHELPER)/.genhelper.yaml
+FILE_EXIV2_METADATA=$(DIR_BASE).exiv2metadata.json
+FILE_GENHELPER_CONFIG=$(DIR_BASE).genhelper.yaml
 
 # A couple libpthread symbols seem to be marked as weak, causing a segfault when run in a non-musl environment.
 LDFLAGS=-ldflags "-linkmode external -extldflags '-Wl,-u,pthread_mutexattr_init -Wl,-u,pthread_mutexattr_destroy -Wl,-u,pthread_mutexattr_settype -static'"
@@ -107,10 +107,10 @@ $(FILE_DOCKER_BUILT): $(FILE_DOCKERFILE)
 
 $(DIR_HELPER)/%.go: $(FILE_EXIV2_METADATA) $(FILE_GENHELPER_CONFIG) $(wildcard $(DIR_CMD_GENHELPER)/*)
 	mkdir -p $(dir $@)
-	$(CMD_GENHELPER_RUN) -c $(FILE_GENHELPER_CONFIG) -m $(FILE_EXIV2_METADATA) -p $(patsubst %/,%,$(dir $*)) > $@
+	$(CMD_GENHELPER_RUN) -c $(FILE_GENHELPER_CONFIG) -p $(patsubst %/,%,$(dir $*)) > $@
 $(DIR_HELPER)/%_test.go: $(FILE_EXIV2_METADATA) $(FILE_GENHELPER_CONFIG) $(wildcard $(DIR_CMD_GENHELPER)/*)
 	mkdir -p $(dir $@)
-	$(CMD_GENHELPER_RUN) -c $(FILE_GENHELPER_CONFIG) -m $(FILE_EXIV2_METADATA) -p $(patsubst %/,%,$(dir $*)) -t > $@
+	$(CMD_GENHELPER_RUN) -c $(FILE_GENHELPER_CONFIG) -p $(patsubst %/,%,$(dir $*)) -t > $@
 
 $(FILE_EXIV2_METADATA): $(wildcard $(DIR_CMD_EXIV2METADATA)/*) $(FILE_DOCKER_BUILT)
 	$(CMD_EXIV2METADATA_RUN) > $@

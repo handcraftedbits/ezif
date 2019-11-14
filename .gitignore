@@ -1,0 +1,6 @@
+.docker-built
+.exiv2metadata.json
+
+helper/exif/
+helper/iptc/
+helper/xmp/
