@@ -28,9 +28,9 @@ VERSION=0.9.0
 # Phony/special targets
 
 .DELETE_ON_ERROR: $(DIR_HELPER)/%.go $(DIR_HELPER)/%_test.go $(FILE_EXIV2_METADATA)
-.PHONY: all helpers helpers_test
+.PHONY: all helpers helpers_test test
 
-all: helpers helpers_test
+all: helpers_test
 
 helpers: $(DIR_HELPER_EXIF)/exif.go \
 	$(DIR_HELPER_IPTC)/iptc.go \
@@ -45,8 +45,8 @@ helpers: $(DIR_HELPER_EXIF)/exif.go \
 	$(DIR_HELPER_XMP)/digikam/digikam.go \
 	$(DIR_HELPER_XMP)/dm/dm.go \
 	$(DIR_HELPER_XMP)/dwc/dwc.go \
-	$(DIR_HELPER_XMP)/exif/exif.go \
-	$(DIR_HELPER_XMP)/exifex/exifex.go \
+	$(DIR_HELPER_XMP)/exifcore/exifcore.go \
+	$(DIR_HELPER_XMP)/exifext/exifext.go \
 	$(DIR_HELPER_XMP)/expressionmedia/expressionmedia.go \
 	$(DIR_HELPER_XMP)/gpano/gpano.go \
 	$(DIR_HELPER_XMP)/iptccore/iptccore.go \
@@ -65,7 +65,7 @@ helpers: $(DIR_HELPER_EXIF)/exif.go \
 	$(DIR_HELPER_XMP)/rights/rights.go \
 	$(DIR_HELPER_XMP)/tiff/tiff.go \
 	$(DIR_HELPER_XMP)/tpg/tpg.go
-helpers_test: $(DIR_HELPER_EXIF)/exif_test.go \
+helpers_test: helpers $(DIR_HELPER_EXIF)/exif_test.go \
 	$(DIR_HELPER_IPTC)/iptc_test.go \
 	$(DIR_HELPER_XMP)/xmp_test.go \
 	$(DIR_HELPER_XMP)/acdsee/acdsee_test.go \
@@ -78,8 +78,8 @@ helpers_test: $(DIR_HELPER_EXIF)/exif_test.go \
 	$(DIR_HELPER_XMP)/digikam/digikam_test.go \
 	$(DIR_HELPER_XMP)/dm/dm_test.go \
 	$(DIR_HELPER_XMP)/dwc/dwc_test.go \
-	$(DIR_HELPER_XMP)/exif/exif_test.go \
-	$(DIR_HELPER_XMP)/exifex/exifex_test.go \
+	$(DIR_HELPER_XMP)/exifcore/exifcore_test.go \
+	$(DIR_HELPER_XMP)/exifext/exifext_test.go \
 	$(DIR_HELPER_XMP)/expressionmedia/expressionmedia_test.go \
 	$(DIR_HELPER_XMP)/gpano/gpano_test.go \
 	$(DIR_HELPER_XMP)/iptccore/iptccore_test.go \
@@ -98,6 +98,9 @@ helpers_test: $(DIR_HELPER_EXIF)/exif_test.go \
 	$(DIR_HELPER_XMP)/rights/rights_test.go \
 	$(DIR_HELPER_XMP)/tiff/tiff_test.go \
 	$(DIR_HELPER_XMP)/tpg/tpg_test.go
+
+test: helpers_test
+	$(CMD_DOCKER_RUN) go test ./helper/exif
 
 # File targets
 

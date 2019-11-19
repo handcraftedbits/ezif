@@ -86,8 +86,7 @@ void populateValueHolder (valueHolder *vh, const Exiv2::Value &value, int index)
      }
 }
 
-void readImageMetadata (const char *filename, exiv2Error *err, valueHolder *vh, readHandlers *handlers,
-     void *rhPointer)
+void readImageMetadata (const char *filename, exiv2Error *err, valueHolder *vh, readHandlers *handlers, void *rhPointer)
 {
      try
      {
