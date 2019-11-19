@@ -40,6 +40,7 @@ type templateContext struct {
 	FunctionNames      []string
 	PackageDescription string
 	PackageName        string
+	Reference          string
 }
 
 type typeIdMapping struct {
@@ -166,6 +167,7 @@ func generateSource(familyName string, f family, packageName string, pc packageC
 		FunctionNames:      functionNames,
 		PackageDescription: pc.Description,
 		PackageName:        strings.ToLower(packageName),
+		Reference:          pc.Reference,
 	})
 
 	if err != nil {

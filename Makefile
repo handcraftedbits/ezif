@@ -28,9 +28,12 @@ VERSION=0.9.0
 # Phony/special targets
 
 .DELETE_ON_ERROR: $(DIR_HELPER)/%.go $(DIR_HELPER)/%_test.go $(FILE_EXIV2_METADATA)
-.PHONY: all helpers helpers_test test
+.PHONY: all clean helpers helpers_test test
 
 all: helpers_test
+
+clean:
+	rm -rf $(DIR_HELPER_EXIF) $(DIR_HELPER_IPTC) $(DIR_HELPER_XMP) $(FILE_DOCKER_BUILT) $(FILE_EXIV2_METADATA)
 
 helpers: $(DIR_HELPER_EXIF)/exif.go \
 	$(DIR_HELPER_IPTC)/iptc.go \
