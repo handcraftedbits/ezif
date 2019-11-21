@@ -128,7 +128,7 @@ packages:
   xmp/mp:
     description: XMP properties used to tag individuals in digital photos (Microsoft Photo 1.2 Region Schema)
     family: XMP
-    groups: ^mp$
+    groups: ^(MP|MPRI|MPReg)$
     reference: https://www.exiv2.org/tags-xmp-MP.html
   xmp/mwgkw:
     description: XMP properties for hierarchical keywords metadata (Metadata Working Group Keywords Schema)

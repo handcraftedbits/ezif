@@ -32,6 +32,9 @@ VERSION=0.9.0
 
 all: helpers_test
 
+build:
+	$(CMD_DOCKER_RUN) go build ./...
+
 clean:
 	rm -rf $(DIR_HELPER_EXIF) $(DIR_HELPER_IPTC) $(DIR_HELPER_XMP) $(FILE_DOCKER_BUILT) $(FILE_EXIV2_METADATA)
 

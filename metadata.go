@@ -60,13 +60,13 @@ type ExifValue interface {
 type IPTCMetadata interface {
 	Metadata
 
-	Get(key string) []IPTCDatum
+	Get(key string) IPTCDatum
 }
 
 type IPTCDatum interface {
 	Datum
 
-	Value() IPTCValue
+	Values() []IPTCValue
 }
 
 type IPTCValue interface {

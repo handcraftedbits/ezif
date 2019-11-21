@@ -10,42 +10,42 @@ import (
 // Public functions
 //
 
-func GetIPTCValueAsDate(metadatum []ezif.IPTCDatum) time.Time {
-	return metadatum[0].Value().Date()
+func GetIPTCValueAsDate(metadatum ezif.IPTCDatum) time.Time {
+	return metadatum.Values()[0].Date()
 }
 
-func GetIPTCValueAsDateSlice(metadatum []ezif.IPTCDatum) []time.Time {
-	var result = make([]time.Time, len(metadatum))
+func GetIPTCValueAsDateSlice(metadatum ezif.IPTCDatum) []time.Time {
+	var result = make([]time.Time, len(metadatum.Values()))
 
-	for i := range metadatum {
-		result[i] = metadatum[i].Value().Date()
+	for i := range metadatum.Values() {
+		result[i] = metadatum.Values()[i].Date()
 	}
 
 	return result
 }
 
-func GetIPTCValueAsString(metadatum []ezif.IPTCDatum) string {
-	return metadatum[0].Value().String()
+func GetIPTCValueAsString(metadatum ezif.IPTCDatum) string {
+	return metadatum.Values()[0].String()
 }
 
-func GetIPTCValueAsStringSlice(metadatum []ezif.IPTCDatum) []string {
-	var result = make([]string, len(metadatum))
+func GetIPTCValueAsStringSlice(metadatum ezif.IPTCDatum) []string {
+	var result = make([]string, len(metadatum.Values()))
 
-	for i := range metadatum {
-		result[i] = metadatum[i].Value().String()
+	for i := range metadatum.Values() {
+		result[i] = metadatum.Values()[i].String()
 	}
 
 	return result
 }
 
-func GetIPTCValueAsTime(metadatum []ezif.IPTCDatum) time.Time {
-	return metadatum[0].Value().Time()
+func GetIPTCValueAsTime(metadatum ezif.IPTCDatum) time.Time {
+	return metadatum.Values()[0].Time()
 }
 
-func GetIPTCValueAsUndefinedSlice(metadatum []ezif.IPTCDatum) []byte {
-	return metadatum[0].Value().Undefined()
+func GetIPTCValueAsUndefinedSlice(metadatum ezif.IPTCDatum) []byte {
+	return metadatum.Values()[0].Undefined()
 }
 
-func GetIPTCValueAsUnsignedShort(metadatum []ezif.IPTCDatum) uint16 {
-	return metadatum[0].Value().Short()
+func GetIPTCValueAsUnsignedShort(metadatum ezif.IPTCDatum) uint16 {
+	return metadatum.Values()[0].Short()
 }
