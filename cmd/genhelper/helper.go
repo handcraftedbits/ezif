@@ -29,7 +29,7 @@ type tag struct {
 	MaxBytes    int    `json:"maxBytes"`
 	MinBytes    int    `json:"minBytes"`
 	Repeatable  bool   `json:"repeatable"`
-	TypeId      int    `json:"typeId"`
+	TypeID      int    `json:"typeId"`
 }
 
 type templateContext struct {
@@ -188,7 +188,7 @@ func generateSource(familyName string, f family, packageName string, pc packageC
 func getAdjustedCount(familyName string, info functionInfo) int {
 	switch familyName {
 	case "Exif":
-		var typeId = info.Tag.TypeId
+		var typeId = info.Tag.TypeID
 
 		// Exiv2 seems to treat the ASCII string and comment types as characters instead of full strings because the
 		// count values range from "unknown" and "any" to fixed values that don't make sense in context (e.g.,
@@ -214,7 +214,7 @@ func getAdjustedCount(familyName string, info functionInfo) int {
 		// An exception to the above rule is that when the "undefined" type (i.e., raw bytes) is used the intention is
 		// for us to generate a byte array as the type, so we'll adjust the count accordingly.
 
-		if info.Tag.TypeId == typeIdUndefined {
+		if info.Tag.TypeID == typeIdUndefined {
 			return 2
 		}
 
@@ -283,7 +283,7 @@ func getFunctionMappings(familyName string, f family, groupNames []string) ([]st
 	return sortedFunctionNames, functionMappings
 }
 
-func getTypeIdMapping(typeId int) typeIdMapping {
+func getTypeIDMapping(typeId int) typeIdMapping {
 	if mapping, ok := typeIdMappings[typeId]; ok {
 		return mapping
 	}
@@ -306,7 +306,7 @@ func initTemplate(name, content string) (*template.Template, error) {
 
 func templateFuncDefaultValue(familyName string, info functionInfo) string {
 	var count = getAdjustedCount(familyName, info)
-	var defaultValue = getTypeIdMapping(info.Tag.TypeId).defaultValue
+	var defaultValue = getTypeIDMapping(info.Tag.TypeID).defaultValue
 
 	if count != 1 {
 		// Must be a slice, pretty obvious what default value we need to use in this case.
@@ -337,7 +337,7 @@ func templateFuncFixDescription(description string) string {
 
 func templateFuncGoType(familyName string, info functionInfo) string {
 	var count = getAdjustedCount(familyName, info)
-	var result = getTypeIdMapping(info.Tag.TypeId).goType
+	var result = getTypeIDMapping(info.Tag.TypeID).goType
 
 	if count != 1 {
 		return "[]" + result
@@ -377,14 +377,12 @@ func templateFuncRequiredImports(functionMappings map[string]functionInfo, testi
 	}
 
 	for _, info := range functionMappings {
-		var mapping = getTypeIdMapping(info.Tag.TypeId)
+		var mapping = getTypeIDMapping(info.Tag.TypeID)
 		var requiredImports = mapping.requiredImports
 		var requiredTestImports = mapping.requiredTestImports
 
-		if requiredImports != nil {
-			for _, requiredImport := range requiredImports {
-				importMap[requiredImport] = true
-			}
+		for _, requiredImport := range requiredImports {
+			importMap[requiredImport] = true
 		}
 
 		if testing && requiredTestImports != nil {
@@ -409,7 +407,7 @@ func templateFuncRequiredImports(functionMappings map[string]functionInfo, testi
 
 func templateFuncValueFunction(familyName string, info functionInfo) string {
 	var count = getAdjustedCount(familyName, info)
-	var result = "internal.Get" + familyName + "ValueAs" + getTypeIdMapping(info.Tag.TypeId).getValueFunc
+	var result = "internal.Get" + familyName + "ValueAs" + getTypeIDMapping(info.Tag.TypeID).getValueFunc
 
 	if count != 1 {
 		result += "Slice"

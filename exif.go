@@ -58,20 +58,20 @@ func (exifDatum *exifDatumImpl) Values() []ExifValue {
 func (exifDatum *exifDatumImpl) populateValueFromValueHolder(index int, valueHolder *C.struct_valueHolder) {
 	var value = &exifValueImpl{}
 
-	switch exifDatum.TypeId() {
-	case TypeIdAsciiString, TypeIdComment:
+	switch exifDatum.TypeID() {
+	case TypeIDAsciiString, TypeIDComment:
 		value.stringValue = C.GoString(valueHolder.strValue)
 
-	case TypeIdSignedByte, TypeIdSignedLong, TypeIdSignedShort:
+	case TypeIDSignedByte, TypeIDSignedLong, TypeIDSignedShort:
 		value.intValue = int32(valueHolder.longValue)
 
-	case TypeIdSignedRational, TypeIdUnsignedRational:
+	case TypeIDSignedRational, TypeIDUnsignedRational:
 		value.rationalValue = big.NewRat(int64(valueHolder.rationalValueN), int64(valueHolder.rationalValueD))
 
-	case TypeIdTIFFDouble, TypeIdTIFFFloat:
+	case TypeIDTIFFDouble, TypeIDTIFFFloat:
 		value.floatValue = float64(valueHolder.doubleValue)
 
-	case TypeIdUndefined, TypeIdUnsignedByte, TypeIdUnsignedLong, TypeIdUnsignedShort:
+	case TypeIDUndefined, TypeIDUnsignedByte, TypeIDUnsignedLong, TypeIDUnsignedShort:
 		value.uintValue = uint32(valueHolder.longValue)
 	}
 
@@ -162,7 +162,7 @@ func newExifDatum(familyName, groupName, tagName string, typeId int, label, inte
 			interpretedValue: interpretedValue,
 			label:            label,
 			tagName:          tagName,
-			typeId:           TypeId(typeId),
+			typeId:           TypeID(typeId),
 		},
 		values: make([]ExifValue, numValues),
 	}

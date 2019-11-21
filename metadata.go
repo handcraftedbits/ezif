@@ -26,7 +26,7 @@ type Datum interface {
 	InterpretedValue() string
 	Label() string
 	TagName() string
-	TypeId() TypeId
+	TypeID() TypeID
 }
 
 type ExifMetadata interface {
@@ -77,7 +77,7 @@ type IPTCValue interface {
 	Undefined() []byte
 }
 
-type TypeId int
+type TypeID int
 
 type XMPLangAlt interface {
 	Language() string
@@ -108,28 +108,28 @@ type XMPValue interface {
 //
 
 const (
-	TypeIdUnsignedByte     TypeId = 1
-	TypeIdAsciiString      TypeId = 2
-	TypeIdUnsignedShort    TypeId = 3
-	TypeIdUnsignedLong     TypeId = 4
-	TypeIdUnsignedRational TypeId = 5
-	TypeIdSignedByte       TypeId = 6
-	TypeIdUndefined        TypeId = 7
-	TypeIdSignedShort      TypeId = 8
-	TypeIdSignedLong       TypeId = 9
-	TypeIdSignedRational   TypeId = 10
-	TypeIdTIFFFloat        TypeId = 11
-	TypeIdTIFFDouble       TypeId = 12
-	TypeIdIPTCString       TypeId = 0x10000
-	TypeIdIPTCDate         TypeId = 0x10001
-	TypeIdIPTCTime         TypeId = 0x10002
-	TypeIdComment          TypeId = 0x10003
-	TypeIdXMPText          TypeId = 0x10005
-	TypeIdXMPAlt           TypeId = 0x10006
-	TypeIdXMPBag           TypeId = 0x10007
-	TypeIdXMPSeq           TypeId = 0x10008
-	TypeIdXMPLangAlt       TypeId = 0x10009
-	TypeIdInvalid          TypeId = 0x1FFFE
+	TypeIDUnsignedByte     TypeID = 1
+	TypeIDAsciiString      TypeID = 2
+	TypeIDUnsignedShort    TypeID = 3
+	TypeIDUnsignedLong     TypeID = 4
+	TypeIDUnsignedRational TypeID = 5
+	TypeIDSignedByte       TypeID = 6
+	TypeIDUndefined        TypeID = 7
+	TypeIDSignedShort      TypeID = 8
+	TypeIDSignedLong       TypeID = 9
+	TypeIDSignedRational   TypeID = 10
+	TypeIDTIFFFloat        TypeID = 11
+	TypeIDTIFFDouble       TypeID = 12
+	TypeIDIPTCString       TypeID = 0x10000
+	TypeIDIPTCDate         TypeID = 0x10001
+	TypeIDIPTCTime         TypeID = 0x10002
+	TypeIDComment          TypeID = 0x10003
+	TypeIDXMPText          TypeID = 0x10005
+	TypeIDXMPAlt           TypeID = 0x10006
+	TypeIDXMPBag           TypeID = 0x10007
+	TypeIDXMPSeq           TypeID = 0x10008
+	TypeIDXMPLangAlt       TypeID = 0x10009
+	TypeIDInvalid          TypeID = 0x1FFFE
 )
 
 //
@@ -160,7 +160,7 @@ type datumImpl struct {
 	interpretedValue string
 	label            string
 	tagName          string
-	typeId           TypeId
+	typeId           TypeID
 }
 
 func (datum *datumImpl) FamilyName() string {
@@ -183,7 +183,7 @@ func (datum *datumImpl) TagName() string {
 	return datum.tagName
 }
 
-func (datum *datumImpl) TypeId() TypeId {
+func (datum *datumImpl) TypeID() TypeID {
 	return datum.typeId
 }
 

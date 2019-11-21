@@ -53,7 +53,7 @@ func templateFuncMinValue(familyName string, info functionInfo) string {
 }
 
 func testMaxValueSingle(info functionInfo) string {
-	switch info.Tag.TypeId {
+	switch info.Tag.TypeID {
 	case typeIdAsciiString:
 		// -1 and 0 are essentially "don't know" values, anything else is a fixed string length.
 
@@ -115,7 +115,7 @@ func testMaxValueSingle(info functionInfo) string {
 }
 
 func testMinValueSingle(info functionInfo) string {
-	switch info.Tag.TypeId {
+	switch info.Tag.TypeID {
 	case typeIdAsciiString, typeIdComment, typeIdIPTCString, typeIdXMPText:
 		return "\"\""
 
@@ -163,7 +163,7 @@ func testValueSlice(info functionInfo, count int, singleValueFunc func(info func
 	var buffer bytes.Buffer
 
 	buffer.WriteString("[]")
-	buffer.WriteString(getTypeIdMapping(info.Tag.TypeId).goType)
+	buffer.WriteString(getTypeIDMapping(info.Tag.TypeID).goType)
 	buffer.WriteString("{")
 
 	for i := 0; i < count; i++ {
