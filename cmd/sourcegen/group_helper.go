@@ -1,9 +1,10 @@
-package main // import "golang.handcraftedbits.com/ezif/cmd/genhelper"
+package main // import "golang.handcraftedbits.com/ezif/cmd/sourcegen"
 
 import (
 	"bytes"
 	"fmt"
 	"go/format"
+	"regexp"
 	"sort"
 	"strings"
 	"text/template"
@@ -22,6 +23,28 @@ type functionInfo struct {
 }
 type group map[string]tag
 
+type groupConfig struct {
+	Description string `yaml:"description"`
+	Family      string `yaml:"family"`
+	Reference   string `yaml:"reference"`
+	Regexp      string `yaml:"regexp"`
+
+	disabledHelpers map[string]bool
+	disabledTests   map[string]bool
+	regexp          *regexp.Regexp
+}
+
+type helperTemplateContext struct {
+	DisabledHelpers    map[string]bool
+	DisabledTests      map[string]bool
+	FamilyName         string
+	FunctionMappings   map[string]functionInfo
+	FunctionNames      []string
+	PackageDescription string
+	PackageName        string
+	Reference          string
+}
+
 type tag struct {
 	Count       int    `json:"count"`
 	Description string `json:"description"`
@@ -32,23 +55,11 @@ type tag struct {
 	TypeID      int    `json:"typeId"`
 }
 
-type templateContext struct {
-	DisabledAccessors  map[string]bool
-	DisabledTests      map[string]bool
-	FamilyName         string
-	FunctionMappings   map[string]functionInfo
-	FunctionNames      []string
-	PackageDescription string
-	PackageName        string
-	Reference          string
-}
-
 type typeIdMapping struct {
-	defaultValue        string
-	getValueFunc        string
+	valueFunc           string
 	goType              string
-	requiredImports     []string
 	requiredTestImports []string
+	returnType          string
 }
 
 //
@@ -85,55 +96,50 @@ const (
 //
 
 var funcMap = template.FuncMap{
-	"FixDescription":    templateFuncFixDescription,
-	"GoType":            templateFuncGoType,
-	"DefaultValue":      templateFuncDefaultValue,
-	"IsAccessorEnabled": templateFuncIsAccessorEnabled,
-	"IsTestEnabled":     templateFuncIsTestEnabled,
-	"LastPackage":       templateFuncLastPackage,
-	"MaxValue":          templateFuncMaxValue,
-	"MinValue":          templateFuncMinValue,
-	"RequiredImports":   templateFuncRequiredImports,
-	"ValueFunction":     templateFuncValueFunction,
+	"FixDescription":  templateFuncFixDescription,
+	"IsHelperEnabled": templateFuncIsHelperEnabled,
+	"IsTestEnabled":   templateFuncIsTestEnabled,
+	"LastPackage":     templateFuncLastPackage,
+	"MaxValue":        templateFuncMaxValue,
+	"MinValue":        templateFuncMinValue,
+	"RequiredImports": templateFuncRequiredImports,
+	"ReturnType":      templateFuncReturnType,
+	"ValueFunction":   templateFuncValueFunction,
 }
 
 var typeIdMappings = map[int]typeIdMapping{
-	typeIdAsciiString:      {"\"\"", "ASCIIString", "string", nil, nil},
-	typeIdComment:          {"\"\"", "Comment", "string", nil, nil},
-	typeIdIPTCDate:         {"time.Now()", "Date", "time.Time", []string{"time"}, nil},
-	typeIdIPTCString:       {"\"\"", "String", "string", nil, nil},
-	typeIdIPTCTime:         {"time.Now()", "Time", "time.Time", []string{"time"}, nil},
-	typeIdSignedByte:       {"0", "SignedByte", "int8", nil, []string{"math"}},
-	typeIdSignedLong:       {"0", "SignedLong", "int32", nil, []string{"math"}},
-	typeIdSignedRational:   {"nil", "SignedRational", "*big.Rat", []string{"math/big"}, []string{"math"}},
-	typeIdSignedShort:      {"0", "SignedShort", "int16", nil, []string{"math"}},
-	typeIdTIFFDouble:       {"0.0", "TIFFDouble", "float64", nil, nil},
-	typeIdTIFFFloat:        {"0.0", "TIFFFloat", "float32", nil, nil},
-	typeIdUndefined:        {"0", "Undefined", "byte", nil, []string{"math"}},
-	typeIdUnsignedByte:     {"0", "UnsignedByte", "uint8", nil, []string{"math"}},
-	typeIdUnsignedLong:     {"0", "UnsignedLong", "uint32", nil, []string{"math"}},
-	typeIdUnsignedRational: {"nil", "UnsignedRational", "*big.Rat", []string{"math/big"}, []string{"math"}},
-	typeIdUnsignedShort:    {"0", "UnsignedShort", "uint16", nil, []string{"math"}},
-	typeIdXMPAlt:           {"nil", "Alt", "[]string", nil, nil},
-	typeIdXMPBag:           {"nil", "Bag", "[]string", nil, nil},
-	typeIdXMPLangAlt:       {"nil", "LangAlt", "[]ezif.XMPLangAlt", nil, nil},
-	typeIdXMPSeq:           {"nil", "Seq", "[]string", nil, nil},
-	typeIdXMPText:          {"\"\"", "Text", "string", nil, nil},
+	typeIdAsciiString:      {"ASCIIString", "string", nil, "String"},
+	typeIdComment:          {"Comment", "string", nil, "String"},
+	typeIdIPTCDate:         {"Date", "time.Time", nil, "Date"},
+	typeIdIPTCString:       {"String", "string", nil, "String"},
+	typeIdIPTCTime:         {"Time", "time.Time", nil, "Date"},
+	typeIdSignedByte:       {"SignedByte", "int8", []string{"math"}, "SignedByte"},
+	typeIdSignedLong:       {"SignedLong", "int32", []string{"math"}, "SignedLong"},
+	typeIdSignedRational:   {"SignedRational", "*big.Rat", []string{"math", "math/big"}, "SignedRational"},
+	typeIdSignedShort:      {"SignedShort", "int16", []string{"math"}, "SignedShort"},
+	typeIdTIFFDouble:       {"TIFFDouble", "float64", nil, "TIFFDouble"},
+	typeIdTIFFFloat:        {"TIFFFloat", "float32", nil, "TIFFFloat"},
+	typeIdUndefined:        {"Undefined", "byte", []string{"math"}, "Undefined"},
+	typeIdUnsignedByte:     {"UnsignedByte", "uint8", []string{"math"}, "UnsignedByte"},
+	typeIdUnsignedLong:     {"UnsignedLong", "uint32", []string{"math"}, "UnsignedLong"},
+	typeIdUnsignedRational: {"UnsignedRational", "*big.Rat", []string{"math", "math/big"}, "UnsignedRational"},
+	typeIdUnsignedShort:    {"UnsignedShort", "uint16", []string{"math"}, "UnsignedShort"},
+	typeIdXMPAlt:           {"Alt", "[]string", nil, "StringSlice"},
+	typeIdXMPBag:           {"Bag", "[]string", nil, "StringSlice"},
+	typeIdXMPLangAlt:       {"LangAlt", "[]ezif.XMPLangAlt", nil, "LangAlt"},
+	typeIdXMPSeq:           {"Seq", "[]string", nil, "StringSlice"},
+	typeIdXMPText:          {"Text", "string", nil, "String"},
 }
 
 //
 // Private functions
 //
 
-func generateGroupSource(familyName string, f family, packageName string, pc packageConfig) (string, error) {
-	return generateSource(familyName, f, packageName, pc, templateGroupSource)
+func generateGroupSource(familyName string, f family, packageName string, gc groupConfig) (string, error) {
+	return generateSource(familyName, f, packageName, gc, templateGroupSource)
 }
 
-func generateGroupTestSource(familyName string, f family, packageName string, pc packageConfig) (string, error) {
-	return generateSource(familyName, f, packageName, pc, templateGroupTestSource)
-}
-
-func generateSource(familyName string, f family, packageName string, pc packageConfig,
+func generateSource(familyName string, f family, packageName string, gc groupConfig,
 	templateBody string) (string, error) {
 	var buffer bytes.Buffer
 	var err error
@@ -146,7 +152,7 @@ func generateSource(familyName string, f family, packageName string, pc packageC
 	// Find matching groups and make sure we iterate over them in order later.
 
 	for group := range f {
-		if pc.groupsRegexp.MatchString(group) {
+		if gc.regexp.MatchString(group) {
 			groupNames = append(groupNames, group)
 		}
 	}
@@ -159,15 +165,15 @@ func generateSource(familyName string, f family, packageName string, pc packageC
 
 	functionNames, functionMappings = getFunctionMappings(familyName, f, groupNames)
 
-	err = templateRoot.Execute(&buffer, &templateContext{
-		DisabledAccessors:  pc.disabledAccessors,
-		DisabledTests:      pc.disabledTests,
+	err = templateRoot.Execute(&buffer, &helperTemplateContext{
+		DisabledHelpers:    gc.disabledHelpers,
+		DisabledTests:      gc.disabledTests,
 		FamilyName:         familyName,
 		FunctionMappings:   functionMappings,
 		FunctionNames:      functionNames,
-		PackageDescription: pc.Description,
+		PackageDescription: gc.Description,
 		PackageName:        strings.ToLower(packageName),
-		Reference:          pc.Reference,
+		Reference:          gc.Reference,
 	})
 
 	if err != nil {
@@ -304,19 +310,6 @@ func initTemplate(name, content string) (*template.Template, error) {
 	return tmpl, nil
 }
 
-func templateFuncDefaultValue(familyName string, info functionInfo) string {
-	var count = getAdjustedCount(familyName, info)
-	var defaultValue = getTypeIDMapping(info.Tag.TypeID).defaultValue
-
-	if count != 1 {
-		// Must be a slice, pretty obvious what default value we need to use in this case.
-
-		return "nil"
-	}
-
-	return defaultValue
-}
-
 func templateFuncFixDescription(description string) string {
 	description = strings.TrimSpace(description)
 
@@ -335,19 +328,8 @@ func templateFuncFixDescription(description string) string {
 	return description
 }
 
-func templateFuncGoType(familyName string, info functionInfo) string {
-	var count = getAdjustedCount(familyName, info)
-	var result = getTypeIDMapping(info.Tag.TypeID).goType
-
-	if count != 1 {
-		return "[]" + result
-	}
-
-	return result
-}
-
-func templateFuncIsAccessorEnabled(info functionInfo, disabledAccessors map[string]bool) bool {
-	return !disabledAccessors[info.FullTagName]
+func templateFuncIsHelperEnabled(info functionInfo, disabledHelpers map[string]bool) bool {
+	return !disabledHelpers[info.FullTagName]
 }
 
 func templateFuncIsTestEnabled(info functionInfo, disabledTests map[string]bool) bool {
@@ -367,23 +349,19 @@ func templateFuncLastPackage(packageName string) string {
 func templateFuncRequiredImports(functionMappings map[string]functionInfo, testing bool) []string {
 	var i = 0
 	var importMap = map[string]bool{
-		"golang.handcraftedbits.com/ezif":                 true,
-		"golang.handcraftedbits.com/ezif/helper/internal": true,
+		"golang.handcraftedbits.com/ezif":        true,
+		"golang.handcraftedbits.com/ezif/helper": true,
 	}
 	var result []string
 
 	if testing {
 		importMap["testing"] = true
+		importMap["golang.handcraftedbits.com/ezif/helper/internal"] = true
 	}
 
 	for _, info := range functionMappings {
 		var mapping = getTypeIDMapping(info.Tag.TypeID)
-		var requiredImports = mapping.requiredImports
 		var requiredTestImports = mapping.requiredTestImports
-
-		for _, requiredImport := range requiredImports {
-			importMap[requiredImport] = true
-		}
 
 		if testing && requiredTestImports != nil {
 			for _, requiredImport := range requiredTestImports {
@@ -405,13 +383,28 @@ func templateFuncRequiredImports(functionMappings map[string]functionInfo, testi
 	return result
 }
 
-func templateFuncValueFunction(familyName string, info functionInfo) string {
+func templateFuncReturnType(familyName string, info functionInfo) string {
 	var count = getAdjustedCount(familyName, info)
-	var result = "internal.Get" + familyName + "ValueAs" + getTypeIDMapping(info.Tag.TypeID).getValueFunc
+	var result = "helper." + getTypeIDMapping(info.Tag.TypeID).returnType
 
 	if count != 1 {
 		result += "Slice"
 	}
+
+	result += "Accessor"
+
+	return result
+}
+
+func templateFuncValueFunction(familyName string, info functionInfo) string {
+	var count = getAdjustedCount(familyName, info)
+	var result = "helper.New" + familyName + getTypeIDMapping(info.Tag.TypeID).valueFunc
+
+	if count != 1 {
+		result += "Slice"
+	}
+
+	result += "Accessor"
 
 	return result
 }

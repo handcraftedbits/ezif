@@ -9,17 +9,6 @@ import (
 // Public types
 //
 
-type ImageMetadata interface {
-	Exif() ExifMetadata
-	IPTC() IPTCMetadata
-	XMP() XMPMetadata
-}
-
-type Metadata interface {
-	HasKey(key string) bool
-	Keys() []string
-}
-
 type Datum interface {
 	FamilyName() string
 	GroupName() string
@@ -29,16 +18,16 @@ type Datum interface {
 	TypeID() TypeID
 }
 
-type ExifMetadata interface {
-	Metadata
-
-	Get(key string) ExifDatum
-}
-
 type ExifDatum interface {
 	Datum
 
 	Values() []ExifValue
+}
+
+type ExifMetadata interface {
+	Metadata
+
+	Get(key string) ExifDatum
 }
 
 type ExifValue interface {
@@ -57,10 +46,10 @@ type ExifValue interface {
 	UnsignedShort() uint16
 }
 
-type IPTCMetadata interface {
-	Metadata
-
-	Get(key string) IPTCDatum
+type ImageMetadata interface {
+	Exif() ExifMetadata
+	IPTC() IPTCMetadata
+	XMP() XMPMetadata
 }
 
 type IPTCDatum interface {
@@ -69,12 +58,23 @@ type IPTCDatum interface {
 	Values() []IPTCValue
 }
 
+type IPTCMetadata interface {
+	Metadata
+
+	Get(key string) IPTCDatum
+}
+
 type IPTCValue interface {
 	Date() time.Time
 	Short() uint16
 	String() string
 	Time() time.Time
 	Undefined() []byte
+}
+
+type Metadata interface {
+	HasKey(key string) bool
+	Keys() []string
 }
 
 type TypeID int

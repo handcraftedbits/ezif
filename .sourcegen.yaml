@@ -1,174 +1,352 @@
-packages:
+# A listing of accessors for image metadata properties of various types.
+accessors:
+  Date:
+    IPTC:
+      - type: time.Time
+        valueMethod: Date
+      - type: time.Time
+        valueMethod: Time
+  DateSlice:
+    IPTC:
+      - type: "[]time.Time"
+        valueMethod: Date
+  LangAlt:
+    XMP:
+      - treatSliceAsSingleValue: true
+        type: "[]ezif.XMPLangAlt"
+        valueMethod: LangAlt
+  SignedByte:
+    Exif:
+      - type: int8
+        valueMethod: SignedByte
+  SignedByteSlice:
+    Exif:
+      - type: "[]int8"
+        valueMethod: SignedByte
+  SignedLong:
+    Exif:
+      - type: int32
+        valueMethod: SignedLong
+  SignedLongSlice:
+    Exif:
+      - type: "[]int32"
+        valueMethod: SignedLong
+  SignedRational:
+    Exif:
+      - type: "*big.Rat"
+        valueMethod: SignedRational
+  SignedRationalSlice:
+    Exif:
+      - type: "[]*big.Rat"
+        valueMethod: SignedRational
+  SignedShort:
+    Exif:
+      - type: int16
+        valueMethod: SignedShort
+  SignedShortSlice:
+    Exif:
+      - type: "[]int16"
+        valueMethod: SignedShort
+  String:
+    Exif:
+      - type: string
+        valueMethod: ASCIIString
+      - type: string
+        valueMethod: Comment
+    IPTC:
+      - type: string
+        valueMethod: String
+    XMP:
+      - type: string
+        valueMethod: Text
+  StringSlice:
+    IPTC:
+      - type: "[]string"
+        valueMethod: String
+    XMP:
+      - treatSliceAsSingleValue: true
+        type: "[]string"
+        valueMethod: Alt
+      - treatSliceAsSingleValue: true
+        type: "[]string"
+        valueMethod: Bag
+      - treatSliceAsSingleValue: true
+        type: "[]string"
+        valueMethod: Seq
+  TIFFDouble:
+    Exif:
+      - type: float64
+        valueMethod: TIFFDouble
+  TIFFFloat:
+    Exif:
+      - type: float32
+        valueMethod: TIFFFloat
+  TIFFDoubleSlice:
+    Exif:
+      - type: "[]float64"
+        valueMethod: TIFFDouble
+  TIFFFloatSlice:
+    Exif:
+      - type: "[]float32"
+        valueMethod: TIFFFloat
+  Undefined:
+    Exif:
+      - type: byte
+        valueMethod: Undefined
+  UndefinedSlice:
+    Exif:
+      - type: "[]byte"
+        valueMethod: Undefined
+    IPTC:
+      - treatSliceAsSingleValue: true
+        type: "[]byte"
+        valueMethod: Undefined
+        valueMethodAlias: UndefinedSlice
+  UnsignedByte:
+    Exif:
+      - type: uint8
+        valueMethod: UnsignedByte
+  UnsignedByteSlice:
+    Exif:
+      - type: "[]uint8"
+        valueMethod: UnsignedByte
+  UnsignedLong:
+    Exif:
+      - type: uint32
+        valueMethod: UnsignedLong
+  UnsignedLongSlice:
+    Exif:
+      - type: "[]uint32"
+        valueMethod: UnsignedLong
+  UnsignedRational:
+    Exif:
+      - type: "*big.Rat"
+        valueMethod: UnsignedRational
+  UnsignedRationalSlice:
+    Exif:
+      - type: "[]*big.Rat"
+        valueMethod: UnsignedRational
+  UnsignedShort:
+    Exif:
+      - type: uint16
+        valueMethod: UnsignedShort
+    IPTC:
+      - type: uint16
+        valueMethod: Short
+        valueMethodAlias: UnsignedShort
+  UnsignedShortSlice:
+    Exif:
+      - type: "[]uint16"
+        valueMethod: UnsignedShort
+
+# A listing of helper methods that are disabled for various reasons.
+disabledHelpers:
+  # Not directly exposed -- should use ezif.* accessors to access values instead.
+  - Exif.Image.ExifTag
+  # Not directly exposed -- should use exif.GPS* accessors to access values instead.
+  - Exif.Image.GPSTag
+  # Not directly exposed -- should use ezif.IPTCMetadata to access values instead.
+  - Exif.Image.IPTCNAA
+  # TODO: ???
+  - Exif.Image.ImageResources
+  # TODO: ???
+  - Exif.Image.JPEGInterchangeFormat
+  # TODO: ???
+  - Exif.Image.JPEGInterchangeFormatLength
+  # TODO: ???
+  - Exif.Image.OECF
+  # TODO: ???
+  - Exif.Image.PhotometricInterpretation
+  # TODO: ???
+  - Exif.Image.RowsPerStrip
+  # TODO: ???
+  - Exif.Image.StripByteCounts
+  # TODO: ???
+  - Exif.Image.StripOffsets
+  # TODO: ???
+  - Exif.Image.SubIFDs
+  # Not directly exposed -- should use ezif.XMPMetadata to access values instead.
+  - Exif.Image.XMLPacket
+  # TODO: ???
+  - Exif.Photo.InteroperabilityTag
+
+# A listing of tests that are disabled for various reasons.
+disabledTests:
+  # TODO: ???
+  - Exif.Image.TileOffsets
+
+# A one-to-one mapping of the groupings that Exiv2 uses for Exif properties, IPTC datasets, and XMP properties.
+groups:
   exif:
     description: Exif tags as defined in the Exif 2.3 standard
     family: Exif
-    groups: ^(GPSInfo|Image|Iop|Photo)$
+    regexp: ^(GPSInfo|Image|Iop|Photo)$
     reference: https://www.exiv2.org/tags.html
   iptc:
     description: IPTC datasets defined according to the specification of the IPTC Information Interchange Model (IIM)
     family: IPTC
-    groups: ^(Application2|Envelope)$
+    regexp: ^(Application2|Envelope)$
     reference: https://www.exiv2.org/iptc.html
   xmp:
     description: XMP properties that provide basic descriptive information (XMP Basic schema)
     family: XMP
-    groups: ^xmp$
+    regexp: ^xmp$
     reference: https://www.exiv2.org/tags-xmp-xmp.html
   xmp/acdsee:
     description: custom XMP properties written by ACDSee applications
     family: XMP
-    groups: ^acdsee$
+    regexp: ^acdsee$
     reference: https://www.exiv2.org/tags-xmp-acdsee.html
   xmp/aux:
     description: >-
       additional XMP properties that describe the equipment used to produce Exif data (Exif Schema for Additional Exif
       Properties)
     family: XMP
-    groups: ^aux$
+    regexp: ^aux$
     reference: https://www.exiv2.org/tags-xmp-aux.html
   xmp/bj:
     description: very simple workflow or job information properties (XMP Basic Job Ticket Schema)
     family: XMP
-    groups: ^xmpBJ$
+    regexp: ^xmpBJ$
     reference: https://www.exiv2.org/tags-xmp-xmpBJ.html
   xmp/crs:
     description: XMP properties associated with image files produced in camera raw mode (Camera Raw Schema)
     family: XMP
-    groups: ^crs$
+    regexp: ^crs$
     reference: https://www.exiv2.org/tags-xmp-crs.html
   xmp/crss:
     description: >-
       XMP properties used to store development settings for raw image files (Camera Raw Saved Settings Schema)
     family: XMP
-    groups: ^crss$
+    regexp: ^crss$
     reference: https://www.exiv2.org/tags-xmp-crss.html
   xmp/dc:
     description: commonly used XMP properties (Dublin Core Schema)
     family: XMP
-    groups: ^dc$
+    regexp: ^dc$
     reference: https://www.exiv2.org/tags-xmp-dc.html
   xmp/dcterms:
     description: qualified Dublin Core XMP properties (Dublin Core Terms Schema)
     family: XMP
-    groups: ^dcterms$
+    regexp: ^dcterms$
     reference: https://www.exiv2.org/tags-xmp-dcterms.html
   xmp/digikam:
     description: XMP properties used by digiKam (digiKam Photo Management Schema)
     family: XMP
-    groups: ^digiKam$
+    regexp: ^digiKam$
     reference: https://www.exiv2.org/tags-xmp-digiKam.html
   xmp/dm:
     description: XMP properties used by the Adobe dynamic media group (XMP Dynamic Media Schema)
     family: XMP
-    groups: ^xmpDM$
+    regexp: ^xmpDM$
     reference: https://www.exiv2.org/tags-xmp-xmpDM.html
   xmp/dwc:
     description: >-
       XMP properties intended to facilitate the sharing of information about biological diversity (Darwin Core Schema)
     family: XMP
-    groups: ^dwc$
+    regexp: ^dwc$
     reference: https://www.exiv2.org/tags-xmp-dwc.html
   xmp/exifcore:
     description: XMP properties defined solely by Exif (Exif Schema for Exif-specific Properties)
     family: XMP
-    groups: ^exif$
+    regexp: ^exif$
     reference: https://www.exiv2.org/tags-xmp-exif.html
   xmp/exifext:
     description: additional XMP properties defined solely by Exif
     family: XMP
-    groups: ^exifEX$
+    regexp: ^exifEX$
     reference: https://www.exiv2.org/tags-xmp-exifEX.html
   xmp/expressionmedia:
     description: Microsoft badged version of the iView Media Pro schema (Microsoft Expression Media Schema)
     family: XMP
-    groups: ^expressionmedia$
+    regexp: ^expressionmedia$
     reference: https://www.exiv2.org/tags-xmp-expressionmedia.html
   xmp/gpano:
     description: >-
       XMP properties that provide information regarding the creation and rendering of a panorama image (Google Photo
       Sphere Schema)
     family: XMP
-    groups: ^GPano$
+    regexp: ^GPano$
     reference: https://www.exiv2.org/tags-xmp-GPano.html
   xmp/iptccore:
     description: IPTC Core XMP properties (IPTC Core Schema)
     family: XMP
-    groups: ^Iptc4xmpCore$
+    regexp: ^Iptc4xmpCore$
     reference: https://www.exiv2.org/tags-xmp-iptc.html
   xmp/iptcext:
     description: IPTC Extension XMP properties (IPTC Extension Schema)
     family: XMP
-    groups: ^Iptc4xmpExt$
+    regexp: ^Iptc4xmpExt$
     reference: https://www.exiv2.org/tags-xmp-iptcExt.html
   xmp/kipi:
     description: KDE Image Program Interface properties (KDE Image Program Interface Schema)
     family: XMP
-    groups: ^kipi$
+    regexp: ^kipi$
     reference: https://www.exiv2.org/tags-xmp-kipi.html
   xmp/lr:
     description: XMP properties used by Adobe Lightroom (Lightroom Schema)
     family: XMP
-    groups: ^lr$
+    regexp: ^lr$
     reference: https://www.exiv2.org/tags-xmp-lr.html
   xmp/mediapro:
     description: Photo One Media Pro XMP properties (Photo One Media Pro Schema)
     family: XMP
-    groups: ^mediapro$
+    regexp: ^mediapro$
     reference: https://www.exiv2.org/tags-xmp-mediapro.html
   xmp/microsoftphoto:
     description: XMP properties used by Microsoft (Microsoft Photo Schema)
     family: XMP
-    groups: ^MicrosoftPhoto$
+    regexp: ^MicrosoftPhoto$
     reference: https://www.exiv2.org/tags-xmp-MicrosoftPhoto.html
   xmp/mm:
     description: XMP properties used by digital asset management (DAM) systems (XMP Media Management Schema)
     family: XMP
-    groups: ^xmpMM$
+    regexp: ^xmpMM$
     reference: https://www.exiv2.org/tags-xmp-xmpMM.html
   xmp/mp:
     description: XMP properties used to tag individuals in digital photos (Microsoft Photo 1.2 Region Schema)
     family: XMP
-    groups: ^(MP|MPRI|MPReg)$
+    regexp: ^(MP|MPRI|MPReg)$
     reference: https://www.exiv2.org/tags-xmp-MP.html
   xmp/mwgkw:
     description: XMP properties for hierarchical keywords metadata (Metadata Working Group Keywords Schema)
     family: XMP
-    groups: ^mwg-kw$
+    regexp: ^mwg-kw$
     reference: https://www.exiv2.org/tags-xmp-mwg-kw.html
   xmp/mwgrs:
     description: XMP properties for image region metadata (Metadata Working Group Regions Schema)
     family: XMP
-    groups: ^mwg-rs$
+    regexp: ^mwg-rs$
     reference: https://www.exiv2.org/tags-xmp-mwg-rs.html
   xmp/pdf:
     description: XMP properties used with Adobe PDF documents (Adobe PDF Schema)
     family: XMP
-    groups: ^pdf$
+    regexp: ^pdf$
     reference: https://www.exiv2.org/tags-xmp-pdf.html
   xmp/photoshop:
     description: XMP properties used by Adobe Photoshop (Adobe Photoshop Schema)
     family: XMP
-    groups: ^photoshop$
+    regexp: ^photoshop$
     reference: https://www.exiv2.org/tags-xmp-photoshop.html
   xmp/plus:
     description: >-
       XMP properties used for image license metadata in digital files and other documents (PLUS Licence Data Format
       Schema)
     family: XMP
-    groups: ^plus$
+    regexp: ^plus$
     reference: https://www.exiv2.org/tags-xmp-plus.html
   xmp/rights:
     description: XMP properties related to rights management (XMP Rights Management Schema)
     family: XMP
-    groups: ^xmpRights$
+    regexp: ^xmpRights$
     reference: https://www.exiv2.org/tags-xmp-xmpRights.html
   xmp/tiff:
     description: XMP properties for TIFF-derived data (Exif Schema for TIFF Properties)
     family: XMP
-    groups: ^tiff$
+    regexp: ^tiff$
     reference: https://www.exiv2.org/tags-xmp-tiff.html
   xmp/tpg:
     description: XMP properties for text appearing on a page in a document
     family: XMP
-    groups: ^xmpTPg$
+    regexp: ^xmpTPg$
     reference: https://www.exiv2.org/tags-xmp-xmpTPg.html

@@ -1,4 +1,4 @@
-package main // import "golang.handcraftedbits.com/ezif/cmd/genhelper"
+package main // import "golang.handcraftedbits.com/ezif/cmd/sourcegen"
 
 import (
 	"bytes"
@@ -7,6 +7,10 @@ import (
 //
 // Private functions
 //
+
+func generateGroupTestSource(familyName string, f family, packageName string, gc groupConfig) (string, error) {
+	return generateSource(familyName, f, packageName, gc, templateGroupTestSource)
+}
 
 func getStringOfFixedLength(length int) string {
 	var result = make([]rune, length)

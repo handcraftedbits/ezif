@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"golang.handcraftedbits.com/ezif"
+	"golang.handcraftedbits.com/ezif/helper"
 )
 
 //
@@ -28,9 +29,9 @@ const (
 // Public functions
 //
 
-func TestGetMissingValueFromHelper(t *testing.T, key string, getterFunc func(ezif.ImageMetadata) (interface{}, bool)) {
+func TestGetMissingValueFromHelper(t *testing.T, key string, accessorFunc func(ezif.ImageMetadata) helper.Accessor) {
+	var accessor helper.Accessor
 	var err error
-	var found bool
 	var metadata ezif.ImageMetadata
 	var tempFile *os.File
 
@@ -46,15 +47,14 @@ func TestGetMissingValueFromHelper(t *testing.T, key string, getterFunc func(ezi
 
 	require.Nil(t, err)
 
-	_, found = getterFunc(metadata)
+	accessor = accessorFunc(metadata)
 
-	require.False(t, found, "expected not to find metadata with key '%s' in test image", key)
+	require.Nil(t, accessor, "expected not to find metadata with key '%s' in test image", key)
 }
 
-func TestGetValueFromHelper(t *testing.T, key string, getterFunc func(ezif.ImageMetadata) (interface{}, bool),
+func TestGetValueFromHelper(t *testing.T, key string, getFunc func(ezif.ImageMetadata) interface{},
 	valuesToSet interface{}) interface{} {
 	var err error
-	var found bool
 	var metadata ezif.ImageMetadata
 	var normalizedValues = normalizeValuesAsSlice(valuesToSet)
 	var result interface{}
@@ -81,10 +81,9 @@ func TestGetValueFromHelper(t *testing.T, key string, getterFunc func(ezif.Image
 
 	require.Nil(t, err)
 
-	result, found = getterFunc(metadata)
+	result = getFunc(metadata)
 
-	require.True(t, found, "couldn't find metadata with key '%s' in test image", key)
-	require.NotNil(t, result, "getter function returned unexpected nil value")
+	require.NotNil(t, result, "couldn't find metadata with key '%s' in test image", key)
 
 	if len(normalizedValues) == 1 {
 		// In order for require.Exactly() to work we need to compare against the single value in the array (since this

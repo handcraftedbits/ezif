@@ -1,13 +1,14 @@
 # Variables
 
 CMD_DOCKER_RUN=docker run -it --rm -v $(DIR_BASE):/ezif $(DOCKER_IMAGE)
-CMD_GENHELPER_RUN=go run $(DIR_CMD_GENHELPER) -m $(FILE_EXIV2_METADATA)
 CMD_EXIV2METADATA_RUN=$(CMD_DOCKER_RUN) go run ./cmd/exiv2metadata
+CMD_SOURCEGEN_HELPER_RUN=$(CMD_SOURCEGEN_RUN) helper -m $(FILE_EXIV2_METADATA)
+CMD_SOURCEGEN_RUN=go run $(DIR_CMD_SOURCEGEN) -c $(FILE_SOURCEGEN_CONFIG)
 
 DIR_BASE=$(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 DIR_CMD=$(DIR_BASE)cmd
 DIR_CMD_EXIV2METADATA=$(DIR_CMD)/exiv2metadata
-DIR_CMD_GENHELPER=$(DIR_CMD)/genhelper
+DIR_CMD_SOURCEGEN=$(DIR_CMD)/sourcegen
 DIR_HELPER=$(DIR_BASE)helper
 DIR_HELPER_EXIF=$(DIR_HELPER)/exif
 DIR_HELPER_IPTC=$(DIR_HELPER)/iptc
@@ -15,10 +16,11 @@ DIR_HELPER_XMP=$(DIR_HELPER)/xmp
 
 DOCKER_IMAGE=handcraftedbits/ezif-build:$(VERSION)
 
+FILE_ACCESSOR=$(DIR_HELPER)/accessor.go
 FILE_DOCKERFILE=$(DIR_BASE)Dockerfile
 FILE_DOCKER_BUILT=$(DIR_BASE).docker-built
 FILE_EXIV2_METADATA=$(DIR_BASE).exiv2metadata.json
-FILE_GENHELPER_CONFIG=$(DIR_BASE).genhelper.yaml
+FILE_SOURCEGEN_CONFIG=$(DIR_BASE).sourcegen.yaml
 
 # A couple libpthread symbols seem to be marked as weak, causing a segfault when run in a non-musl environment.
 LDFLAGS=-ldflags "-linkmode external -extldflags '-Wl,-u,pthread_mutexattr_init -Wl,-u,pthread_mutexattr_destroy -Wl,-u,pthread_mutexattr_settype -static'"
@@ -32,13 +34,15 @@ VERSION=0.9.0
 
 all: helpers_test
 
-build:
+build: helpers
 	$(CMD_DOCKER_RUN) go build ./...
 
 clean:
-	rm -rf $(DIR_HELPER_EXIF) $(DIR_HELPER_IPTC) $(DIR_HELPER_XMP) $(FILE_DOCKER_BUILT) $(FILE_EXIV2_METADATA)
+	rm -rf $(DIR_HELPER_EXIF) $(DIR_HELPER_IPTC) $(DIR_HELPER_XMP) $(FILE_ACCESSOR) $(FILE_DOCKER_BUILT) \
+		$(FILE_EXIV2_METADATA)
 
-helpers: $(DIR_HELPER_EXIF)/exif.go \
+helpers: $(FILE_ACCESSOR) \
+	$(DIR_HELPER_EXIF)/exif.go \
 	$(DIR_HELPER_IPTC)/iptc.go \
 	$(DIR_HELPER_XMP)/xmp.go \
 	$(DIR_HELPER_XMP)/acdsee/acdsee.go \
@@ -114,12 +118,15 @@ $(FILE_DOCKER_BUILT): $(FILE_DOCKERFILE)
 	docker build -t $(DOCKER_IMAGE) -f $(FILE_DOCKERFILE) $(DIR_BASE)
 	docker images -f "reference=$(DOCKER_IMAGE)" --format="{{ .ID }}" > $@
 
-$(DIR_HELPER)/%.go: $(FILE_EXIV2_METADATA) $(FILE_GENHELPER_CONFIG) $(wildcard $(DIR_CMD_GENHELPER)/*)
+$(DIR_HELPER)/%.go: $(FILE_EXIV2_METADATA) $(FILE_SOURCEGEN_CONFIG) $(wildcard $(DIR_CMD_SOURCEGEN)/*)
 	mkdir -p $(dir $@)
-	$(CMD_GENHELPER_RUN) -c $(FILE_GENHELPER_CONFIG) -p $(patsubst %/,%,$(dir $*)) > $@
-$(DIR_HELPER)/%_test.go: $(FILE_EXIV2_METADATA) $(FILE_GENHELPER_CONFIG) $(wildcard $(DIR_CMD_GENHELPER)/*)
+	$(CMD_SOURCEGEN_HELPER_RUN) -g $(patsubst %/,%,$(dir $*)) > $@
+$(DIR_HELPER)/%_test.go: $(FILE_EXIV2_METADATA) $(FILE_SOURCEGEN_CONFIG) $(wildcard $(DIR_CMD_SOURCEGEN)/*)
 	mkdir -p $(dir $@)
-	$(CMD_GENHELPER_RUN) -c $(FILE_GENHELPER_CONFIG) -p $(patsubst %/,%,$(dir $*)) -t > $@
+	$(CMD_SOURCEGEN_HELPER_RUN) -g $(patsubst %/,%,$(dir $*)) -t > $@
+$(FILE_ACCESSOR): $(FILE_SOURCEGEN_CONFIG) $(wildcard $(DIR_CMD_SOURCEGEN)/*)
+	mkdir -p $(dir $@)
+	$(CMD_SOURCEGEN_RUN) accessor -p helper > $@
 
 $(FILE_EXIV2_METADATA): $(wildcard $(DIR_CMD_EXIV2METADATA)/*) $(FILE_DOCKER_BUILT)
 	$(CMD_EXIV2METADATA_RUN) > $@
