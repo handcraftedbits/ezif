@@ -83,6 +83,7 @@ type XMPLangAlt interface {
 	Language() string
 	Value() string
 }
+
 type XMPMetadata interface {
 	Metadata
 

@@ -141,7 +141,7 @@ accessors:
 
 # A listing of helper methods that are disabled for various reasons.
 disabledHelpers:
-  # Not directly exposed -- should use ezif.* accessors to access values instead.
+  # Not directly exposed -- should use exif.* accessors to access values instead.
   - Exif.Image.ExifTag
   # Not directly exposed -- should use exif.GPS* accessors to access values instead.
   - Exif.Image.GPSTag
