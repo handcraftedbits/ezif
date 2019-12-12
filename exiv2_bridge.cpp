@@ -40,6 +40,30 @@ void populateValueHolder (valueHolder *vh, const Exiv2::Value &value, int index)
                break;
           }
 
+          case Exiv2::TypeId::date:
+          {
+               auto date = static_cast<const Exiv2::DateValue&>(value).getDate();
+
+               vh->dayValue = date.day;
+               vh->monthValue = date.month;
+               vh->yearValue = date.year;
+
+               break;
+          }
+
+          case Exiv2::TypeId::time:
+          {
+               auto time = static_cast<const Exiv2::TimeValue&>(value).getTime();
+
+               vh->hourValue = time.hour;
+               vh->minuteValue = time.minute;
+               vh->secondValue = time.second;
+               vh->timezoneHourOffset = time.tzHour;
+               vh->timezoneMinuteOffset = time.tzMinute;
+
+               break;
+          }
+
           case Exiv2::TypeId::signedByte:
           case Exiv2::TypeId::signedLong:
           case Exiv2::TypeId::signedShort:
@@ -127,8 +151,12 @@ void readImageMetadata (const char *filename, exiv2Error *err, valueHolder *vh, 
                {
                     populateValueHolder(vh, exifDatum.value(), i);
 
-                    handlers->vc(rhPointer, exifDatum.familyName(), vh);
+                    handlers->vc(rhPointer, vh);
                }
+
+               // Notify that we've finished processing the Exif data.
+
+               handlers->doec(rhPointer, exifDatum.familyName());
           }
      }
 

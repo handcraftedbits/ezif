@@ -58,7 +58,8 @@ func templateFuncMinValue(familyName string, info functionInfo) string {
 
 func testMaxValueSingle(info functionInfo) string {
 	switch info.Tag.TypeID {
-	case typeIdAsciiString:
+	// TODO: Id -> ID
+	case typeIdAsciiString, typeIdComment:
 		// -1 and 0 are essentially "don't know" values, anything else is a fixed string length.
 
 		if info.Tag.Count > 0 {
@@ -69,7 +70,7 @@ func testMaxValueSingle(info functionInfo) string {
 
 		return "\"" + getStringOfFixedLength(64) + "\""
 
-	case typeIdComment, typeIdIPTCString, typeIdXMPText:
+	case typeIdIPTCString, typeIdXMPText:
 		return "\"\""
 
 	case typeIdIPTCDate, typeIdIPTCTime:

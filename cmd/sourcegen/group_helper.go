@@ -56,7 +56,6 @@ type tag struct {
 }
 
 type typeIdMapping struct {
-	valueFunc           string
 	goType              string
 	requiredTestImports []string
 	returnType          string
@@ -104,31 +103,30 @@ var funcMap = template.FuncMap{
 	"MinValue":        templateFuncMinValue,
 	"RequiredImports": templateFuncRequiredImports,
 	"ReturnType":      templateFuncReturnType,
-	"ValueFunction":   templateFuncValueFunction,
 }
 
 var typeIdMappings = map[int]typeIdMapping{
-	typeIdAsciiString:      {"ASCIIString", "string", nil, "String"},
-	typeIdComment:          {"Comment", "string", nil, "String"},
-	typeIdIPTCDate:         {"Date", "time.Time", nil, "Date"},
-	typeIdIPTCString:       {"String", "string", nil, "String"},
-	typeIdIPTCTime:         {"Time", "time.Time", nil, "Date"},
-	typeIdSignedByte:       {"SignedByte", "int8", []string{"math"}, "SignedByte"},
-	typeIdSignedLong:       {"SignedLong", "int32", []string{"math"}, "SignedLong"},
-	typeIdSignedRational:   {"SignedRational", "*big.Rat", []string{"math", "math/big"}, "SignedRational"},
-	typeIdSignedShort:      {"SignedShort", "int16", []string{"math"}, "SignedShort"},
-	typeIdTIFFDouble:       {"TIFFDouble", "float64", nil, "TIFFDouble"},
-	typeIdTIFFFloat:        {"TIFFFloat", "float32", nil, "TIFFFloat"},
-	typeIdUndefined:        {"Undefined", "byte", []string{"math"}, "Undefined"},
-	typeIdUnsignedByte:     {"UnsignedByte", "uint8", []string{"math"}, "UnsignedByte"},
-	typeIdUnsignedLong:     {"UnsignedLong", "uint32", []string{"math"}, "UnsignedLong"},
-	typeIdUnsignedRational: {"UnsignedRational", "*big.Rat", []string{"math", "math/big"}, "UnsignedRational"},
-	typeIdUnsignedShort:    {"UnsignedShort", "uint16", []string{"math"}, "UnsignedShort"},
-	typeIdXMPAlt:           {"Alt", "[]string", nil, "StringSlice"},
-	typeIdXMPBag:           {"Bag", "[]string", nil, "StringSlice"},
-	typeIdXMPLangAlt:       {"LangAlt", "[]ezif.XMPLangAlt", nil, "LangAlt"},
-	typeIdXMPSeq:           {"Seq", "[]string", nil, "StringSlice"},
-	typeIdXMPText:          {"Text", "string", nil, "String"},
+	typeIdAsciiString:      {"string", nil, "String"},
+	typeIdComment:          {"string", nil, "String"},
+	typeIdIPTCDate:         {"time.Time", nil, "Date"},
+	typeIdIPTCString:       {"string", nil, "String"},
+	typeIdIPTCTime:         {"time.Time", nil, "Time"},
+	typeIdSignedByte:       {"int8", []string{"math"}, "SignedByte"},
+	typeIdSignedLong:       {"int32", []string{"math"}, "SignedLong"},
+	typeIdSignedRational:   {"*big.Rat", []string{"math", "math/big"}, "SignedRational"},
+	typeIdSignedShort:      {"int16", []string{"math"}, "SignedShort"},
+	typeIdTIFFDouble:       {"float64", nil, "Double"},
+	typeIdTIFFFloat:        {"float32", nil, "Float"},
+	typeIdUndefined:        {"byte", []string{"math"}, "Undefined"},
+	typeIdUnsignedByte:     {"uint8", []string{"math"}, "UnsignedByte"},
+	typeIdUnsignedLong:     {"uint32", []string{"math"}, "UnsignedLong"},
+	typeIdUnsignedRational: {"*big.Rat", []string{"math", "math/big"}, "UnsignedRational"},
+	typeIdUnsignedShort:    {"uint16", []string{"math"}, "UnsignedShort"},
+	typeIdXMPAlt:           {"[]string", nil, "StringSlice"},
+	typeIdXMPBag:           {"[]string", nil, "StringSlice"},
+	typeIdXMPLangAlt:       {"[]ezif.XMPLangAlt", nil, "XMPLangAlt"},
+	typeIdXMPSeq:           {"[]string", nil, "StringSlice"},
+	typeIdXMPText:          {"string", nil, "String"},
 }
 
 //
@@ -349,8 +347,9 @@ func templateFuncLastPackage(packageName string) string {
 func templateFuncRequiredImports(functionMappings map[string]functionInfo, testing bool) []string {
 	var i = 0
 	var importMap = map[string]bool{
-		"golang.handcraftedbits.com/ezif":        true,
-		"golang.handcraftedbits.com/ezif/helper": true,
+		"golang.handcraftedbits.com/ezif":                 true,
+		"golang.handcraftedbits.com/ezif/helper":          true,
+		"golang.handcraftedbits.com/ezif/helper/internal": true,
 	}
 	var result []string
 
@@ -385,26 +384,11 @@ func templateFuncRequiredImports(functionMappings map[string]functionInfo, testi
 
 func templateFuncReturnType(familyName string, info functionInfo) string {
 	var count = getAdjustedCount(familyName, info)
-	var result = "helper." + getTypeIDMapping(info.Tag.TypeID).returnType
+	var result = getTypeIDMapping(info.Tag.TypeID).returnType
 
 	if count != 1 {
 		result += "Slice"
 	}
-
-	result += "Accessor"
-
-	return result
-}
-
-func templateFuncValueFunction(familyName string, info functionInfo) string {
-	var count = getAdjustedCount(familyName, info)
-	var result = "helper.New" + familyName + getTypeIDMapping(info.Tag.TypeID).valueFunc
-
-	if count != 1 {
-		result += "Slice"
-	}
-
-	result += "Accessor"
 
 	return result
 }

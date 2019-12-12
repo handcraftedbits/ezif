@@ -17,7 +17,7 @@ import (
 //
 
 type sourcegenConfig struct {
-	Accessors       accessorsConfig        `yaml:"accessors"`
+	Accessors       map[string]string      `yaml:"accessors"`
 	DisabledHelpers []string               `yaml:"disabledHelpers"`
 	DisabledTests   []string               `yaml:"disabledTests"`
 	Groups          map[string]groupConfig `yaml:"groups"`
@@ -34,6 +34,7 @@ var commandAccessor = &cobra.Command{
 		var config *sourcegenConfig
 		var err error
 		var generatedSource string
+		var templateSource string
 
 		config, err = getSourcegenConfig()
 
@@ -41,7 +42,13 @@ var commandAccessor = &cobra.Command{
 			return err
 		}
 
-		generatedSource, err = generateAccessorSource(flagPackage, config.Accessors, templateAccessorSource)
+		if flagAccessorImpl {
+			templateSource = templateAccessorImplSource
+		} else {
+			templateSource = templateAccessorIntfSource
+		}
+
+		generatedSource, err = generateAccessorSource(flagAccessorPackage, config.Accessors, templateSource)
 
 		if err != nil {
 			return err
@@ -66,7 +73,7 @@ var commandHelper = &cobra.Command{
 
 		// Validate arguments and run templates.
 
-		contents, err = ioutil.ReadFile(flagMetadata)
+		contents, err = ioutil.ReadFile(flagHelperMetadata)
 
 		if err != nil {
 			return errors.Wrap(err, "invalid Exiv2 metadata file provided")
@@ -84,11 +91,11 @@ var commandHelper = &cobra.Command{
 			return err
 		}
 
-		if _, ok := config.Groups[flagGroup]; !ok {
-			return fmt.Errorf("invalid group '%s' specified", flagGroup)
+		if _, ok := config.Groups[flagHelperGroup]; !ok {
+			return fmt.Errorf("invalid group '%s' specified", flagHelperGroup)
 		}
 
-		gc = config.Groups[flagGroup]
+		gc = config.Groups[flagHelperGroup]
 
 		gc.disabledHelpers = getDisabledItems(config.DisabledHelpers)
 		gc.disabledTests = getDisabledItems(config.DisabledTests)
@@ -98,10 +105,10 @@ var commandHelper = &cobra.Command{
 			return errors.Wrap(err, "invalid groups regular expression provided")
 		}
 
-		if !flagTest {
-			generatedSource, err = generateGroupSource(gc.Family, metadata[gc.Family], flagGroup, gc)
+		if !flagHelperTest {
+			generatedSource, err = generateGroupSource(gc.Family, metadata[gc.Family], flagHelperGroup, gc)
 		} else {
-			generatedSource, err = generateGroupTestSource(gc.Family, metadata[gc.Family], flagGroup, gc)
+			generatedSource, err = generateGroupTestSource(gc.Family, metadata[gc.Family], flagHelperGroup, gc)
 		}
 
 		if err != nil {
@@ -120,11 +127,12 @@ var commandRoot = &cobra.Command{
 }
 
 var (
-	flagConfig   string
-	flagGroup    string
-	flagMetadata string
-	flagPackage  string
-	flagTest     bool
+	flagAccessorImpl    bool
+	flagAccessorPackage string
+	flagConfig          string
+	flagHelperGroup     string
+	flagHelperMetadata  string
+	flagHelperTest      bool
 )
 
 //
@@ -162,11 +170,14 @@ func getDisabledItems(items []string) map[string]bool {
 }
 
 func main() {
-	commandAccessor.Flags().StringVarP(&flagPackage, "package", "p", "", "the package for generated accessor code")
-	commandHelper.Flags().StringVarP(&flagGroup, "group", "g", "", "name of group to use for code generation")
-	commandHelper.Flags().StringVarP(&flagMetadata, "metadata", "m", "", "path to JSON-formatted Exiv2 metadata")
-	commandHelper.Flags().BoolVarP(&flagTest, "test", "t", false, "whether or not test code, instead of helper code, "+
-		"should be generated")
+	commandAccessor.Flags().BoolVarP(&flagAccessorImpl, "impl", "i", false, "whether or not implementation code, "+
+		"instead of interface code, should be generated")
+	commandAccessor.Flags().StringVarP(&flagAccessorPackage, "package", "p", "", "the package for generated accessor "+
+		"code")
+	commandHelper.Flags().StringVarP(&flagHelperGroup, "group", "g", "", "name of group to use for code generation")
+	commandHelper.Flags().StringVarP(&flagHelperMetadata, "metadata", "m", "", "path to JSON-formatted Exiv2 metadata")
+	commandHelper.Flags().BoolVarP(&flagHelperTest, "test", "t", false, "whether or not test code, instead of helper "+
+		"code, should be generated")
 
 	commandRoot.PersistentFlags().StringVarP(&flagConfig, "config", "c", "", "path to sourcegen configuration file")
 

@@ -12,41 +12,22 @@ import (
 // Private types
 //
 
-type accessorConfig struct {
-	TreatSliceAsSingleValue bool   `yaml:"treatSliceAsSingleValue"`
-	Type                    string `yaml:"type"`
-	ValueMethod             string `yaml:"valueMethod"`
-	ValueMethodAlias        string `yaml:"valueMethodAlias"`
+type accessorInfo struct {
+	ImplName string
+	Name     string
+	Type     string
 }
-
-type accessorImplementation struct {
-	Family           string
-	InterfaceName    string
-	IsSlice          bool
-	Name             string
-	Type             string
-	ValueMethod      string
-	ValueMethodAlias string
-}
-
-type accessorInterface struct {
-	Name string
-	Type string
-}
-
-type accessorsConfig map[string]map[string][]accessorConfig
 
 type accessorTemplateContext struct {
-	AccessorImplementations []accessorImplementation
-	AccessorInterfaces      []accessorInterface
-	PackageName             string
+	AccessorInfos []accessorInfo
+	PackageName   string
 }
 
 //
 // Private functions
 //
 
-func generateAccessorSource(packageName string, accessors accessorsConfig, templateBody string) (string, error) {
+func generateAccessorSource(packageName string, accessors map[string]string, templateBody string) (string, error) {
 	var buffer bytes.Buffer
 	var err error
 	var formattedSource []byte
@@ -59,9 +40,8 @@ func generateAccessorSource(packageName string, accessors accessorsConfig, templ
 	}
 
 	err = templateRoot.Execute(&buffer, &accessorTemplateContext{
-		AccessorImplementations: getAccessorImplementations(accessors),
-		AccessorInterfaces:      getAccessorInterfaces(accessors),
-		PackageName:             packageName,
+		AccessorInfos: getAccessorInfos(accessors),
+		PackageName:   packageName,
 	})
 
 	if err != nil {
@@ -79,69 +59,29 @@ func generateAccessorSource(packageName string, accessors accessorsConfig, templ
 	return string(formattedSource), nil
 }
 
-func getAccessorImplementations(accessors accessorsConfig) []accessorImplementation {
-	var result []accessorImplementation
+func getAccessorInfos(accessors map[string]string) []accessorInfo {
+	var result []accessorInfo
 
-	for name := range accessors {
-		for family := range accessors[name] {
-			for _, value := range accessors[name][family] {
-				var isSlice = strings.HasPrefix(value.Type, "[]") && !value.TreatSliceAsSingleValue
-				var structName = strings.ToLower(family) + value.ValueMethod
+	for name, goType := range accessors {
+		var implName string
+		var nameRunes = []rune(name)
 
-				if isSlice {
-					structName += "Slice"
-				}
+		implName = strings.ToLower(string(nameRunes[0])) + string(nameRunes[1:])
 
-				result = append(result, accessorImplementation{
-					Family:           family,
-					InterfaceName:    name,
-					IsSlice:          isSlice,
-					Name:             structName,
-					Type:             value.Type,
-					ValueMethod:      value.ValueMethod,
-					ValueMethodAlias: value.ValueMethodAlias,
-				})
-			}
+		if strings.HasPrefix(implName, "xMP") {
+			implName = "xmp" + string(nameRunes[3:])
 		}
+
+		result = append(result, accessorInfo{
+			ImplName: implName,
+			Name:     name,
+			Type:     goType,
+		})
 	}
 
 	sort.Slice(result, func(i, j int) bool {
-		var firstName = result[i].Family + result[i].ValueMethod
-		var lastName = result[j].Family + result[j].ValueMethod
-
-		return strings.Compare(firstName, lastName) == -1
+		return strings.Compare(result[i].Name, result[j].Name) < 0
 	})
-
-	return result
-}
-
-func getAccessorInterfaces(accessors accessorsConfig) []accessorInterface {
-	var result []accessorInterface
-	var sortedNames []string
-
-	for name := range accessors {
-		sortedNames = append(sortedNames, name)
-	}
-
-	sort.Strings(sortedNames)
-
-	for _, name := range sortedNames {
-		var valueType string
-
-		// The type for the interface getters and setters will be the same for all implementations, so just use the
-		// first one.
-
-		for key := range accessors[name] {
-			valueType = accessors[name][key][0].Type
-
-			break
-		}
-
-		result = append(result, accessorInterface{
-			Name: name,
-			Type: valueType,
-		})
-	}
 
 	return result
 }

@@ -1,8 +1,11 @@
 package ezif // import "golang.handcraftedbits.com/ezif"
 
+import "C"
+
 import (
+	"fmt"
 	"math/big"
-	"time"
+	"sort"
 )
 
 //
@@ -16,92 +19,26 @@ type Datum interface {
 	Label() string
 	TagName() string
 	TypeID() TypeID
-}
-
-type ExifDatum interface {
-	Datum
-
-	Values() []ExifValue
-}
-
-type ExifMetadata interface {
-	Metadata
-
-	Get(key string) ExifDatum
-}
-
-type ExifValue interface {
-	ASCIIString() string
-	Comment() string
-	SignedByte() int8
-	SignedLong() int32
-	SignedRational() *big.Rat
-	SignedShort() int16
-	TIFFDouble() float64
-	TIFFFloat() float32
-	Undefined() byte
-	UnsignedByte() uint8
-	UnsignedLong() uint32
-	UnsignedRational() *big.Rat
-	UnsignedShort() uint16
+	Value() interface{}
 }
 
 type ImageMetadata interface {
-	Exif() ExifMetadata
-	IPTC() IPTCMetadata
-	XMP() XMPMetadata
-}
-
-type IPTCDatum interface {
-	Datum
-
-	Values() []IPTCValue
-}
-
-type IPTCMetadata interface {
-	Metadata
-
-	Get(key string) IPTCDatum
-}
-
-type IPTCValue interface {
-	Date() time.Time
-	Short() uint16
-	String() string
-	Time() time.Time
-	Undefined() []byte
+	Exif() Metadata
+	IPTC() Metadata
+	XMP() Metadata
 }
 
 type Metadata interface {
-	HasKey(key string) bool
+	Get(key string) Datum
 	Keys() []string
 }
 
 type TypeID int
 
+// TODO: move into xmp package
 type XMPLangAlt interface {
 	Language() string
 	Value() string
-}
-
-type XMPMetadata interface {
-	Metadata
-
-	Get(key string) XMPDatum
-}
-
-type XMPDatum interface {
-	Datum
-
-	Value() XMPValue
-}
-
-type XMPValue interface {
-	Alt() []string
-	Bag() []string
-	LangAlt() []XMPLangAlt
-	Seq() []string
-	Text() string
 }
 
 //
@@ -137,23 +74,6 @@ const (
 // Private types
 //
 
-// ImageMetadata implementation
-type imageMetadataImpl struct {
-	exifMetadata ExifMetadata
-}
-
-func (imageMetadata *imageMetadataImpl) Exif() ExifMetadata {
-	return imageMetadata.exifMetadata
-}
-
-func (imageMetadata *imageMetadataImpl) IPTC() IPTCMetadata {
-	return nil
-}
-
-func (imageMetadata *imageMetadataImpl) XMP() XMPMetadata {
-	return nil
-}
-
 // Datum implementation
 type datumImpl struct {
 	familyName       string
@@ -162,6 +82,7 @@ type datumImpl struct {
 	label            string
 	tagName          string
 	typeId           TypeID
+	value            interface{}
 }
 
 func (datum *datumImpl) FamilyName() string {
@@ -188,6 +109,216 @@ func (datum *datumImpl) TypeID() TypeID {
 	return datum.typeId
 }
 
+func (datum *datumImpl) Value() interface{} {
+	return datum.value
+}
+
 func (datum *datumImpl) key() string {
 	return datum.familyName + "." + datum.groupName + "." + datum.tagName
+}
+
+// ImageMetadata implementation
+type imageMetadataImpl struct {
+	exifMetadata *metadataImpl
+	iptcMetadata *metadataImpl
+	xmpMetadata  *metadataImpl
+}
+
+func (imageMetadata *imageMetadataImpl) Exif() Metadata {
+	return imageMetadata.exifMetadata
+}
+
+func (imageMetadata *imageMetadataImpl) IPTC() Metadata {
+	return imageMetadata.iptcMetadata
+}
+
+func (imageMetadata *imageMetadataImpl) XMP() Metadata {
+	return imageMetadata.xmpMetadata
+}
+
+// Metadata implementation
+type metadataImpl struct {
+	datumMap map[string]Datum
+	keys     []string
+}
+
+func (metadata *metadataImpl) Get(key string) Datum {
+	return metadata.datumMap[key]
+}
+
+func (metadata *metadataImpl) Keys() []string {
+	return metadata.keys
+}
+
+func (metadata *metadataImpl) add(datum *datumImpl, values []interface{}) {
+	if datum.familyName == "Exif" && datum.groupName == "Photo" && datum.tagName == "UserComment" {
+		fmt.Printf("*** add... typeId=%d\n", datum.typeId)
+	}
+	metadata.datumMap[datum.key()] = datum
+
+	if len(values) == 1 {
+		datum.value = values[0]
+
+		return
+	}
+
+	// For slice values, we need to do a manual conversion from an interface{} slice to a concrete-typed slice.  This
+	// keeps us from having to do a similar conversion later on.
+
+	switch datum.TypeID() {
+	case TypeIDAsciiString, TypeIDComment, TypeIDIPTCString, TypeIDXMPAlt, TypeIDXMPBag, TypeIDXMPSeq, TypeIDXMPText:
+		var newSlice = make([]string, len(values))
+
+		for i, value := range values {
+			newSlice[i] = value.(string)
+		}
+
+		datum.value = newSlice
+
+	case TypeIDIPTCDate:
+		var newSlice = make([]IPTCDate, len(values))
+
+		for i, value := range values {
+			newSlice[i] = value.(IPTCDate)
+		}
+
+		datum.value = newSlice
+
+	case TypeIDIPTCTime:
+		var newSlice = make([]IPTCTime, len(values))
+
+		for i, value := range values {
+			newSlice[i] = value.(IPTCTime)
+		}
+
+		datum.value = newSlice
+
+	case TypeIDSignedByte:
+		var newSlice = make([]int8, len(values))
+
+		for i, value := range values {
+			newSlice[i] = value.(int8)
+		}
+
+		datum.value = newSlice
+
+	case TypeIDSignedLong:
+		var newSlice = make([]int32, len(values))
+
+		for i, value := range values {
+			newSlice[i] = value.(int32)
+		}
+
+		datum.value = newSlice
+
+	case TypeIDSignedShort:
+		var newSlice = make([]int16, len(values))
+
+		for i, value := range values {
+			newSlice[i] = value.(int16)
+		}
+
+		datum.value = newSlice
+
+	case TypeIDSignedRational, TypeIDUnsignedRational:
+		var newSlice = make([]*big.Rat, len(values))
+
+		for i, value := range values {
+			newSlice[i] = value.(*big.Rat)
+		}
+
+		datum.value = newSlice
+
+	case TypeIDTIFFDouble:
+		var newSlice = make([]float64, len(values))
+
+		for i, value := range values {
+			newSlice[i] = value.(float64)
+		}
+
+		datum.value = newSlice
+
+	case TypeIDTIFFFloat:
+		var newSlice = make([]float32, len(values))
+
+		for i, value := range values {
+			newSlice[i] = value.(float32)
+		}
+
+		datum.value = newSlice
+
+	case TypeIDUndefined:
+		var newSlice = make([]byte, len(values))
+
+		for i, value := range values {
+			newSlice[i] = value.(byte)
+		}
+
+		datum.value = newSlice
+
+	case TypeIDUnsignedByte:
+		var newSlice = make([]uint8, len(values))
+
+		for i, value := range values {
+			newSlice[i] = value.(uint8)
+		}
+
+		datum.value = newSlice
+
+	case TypeIDUnsignedLong:
+		var newSlice = make([]uint32, len(values))
+
+		for i, value := range values {
+			newSlice[i] = value.(uint32)
+		}
+
+		datum.value = newSlice
+
+	case TypeIDUnsignedShort:
+		var newSlice = make([]uint16, len(values))
+
+		for i, value := range values {
+			newSlice[i] = value.(uint16)
+		}
+
+		datum.value = newSlice
+
+	case TypeIDXMPLangAlt:
+		var newSlice = make([]XMPLangAlt, len(values))
+
+		for i, value := range values {
+			newSlice[i] = value.(XMPLangAlt)
+		}
+
+		datum.value = newSlice
+	}
+}
+
+func (metadata *metadataImpl) finish() {
+	var i = 0
+
+	metadata.keys = make([]string, len(metadata.datumMap))
+
+	for key := range metadata.datumMap {
+		metadata.keys[i] = key
+
+		i++
+	}
+
+	sort.Strings(metadata.keys)
+}
+
+//
+// Private functions
+//
+
+func newDatum(familyName, groupName, tagName string, typeId int, label, interpretedValue string) *datumImpl {
+	return &datumImpl{
+		familyName:       familyName,
+		groupName:        groupName,
+		interpretedValue: interpretedValue,
+		label:            label,
+		tagName:          tagName,
+		typeId:           TypeID(typeId),
+	}
 }

@@ -1,6 +1,7 @@
 .docker-built
 .exiv2metadata.json
 helper/accessor.go
+helper/internal/accessor.go
 
 .idea/
 helper/exif/

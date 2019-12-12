@@ -30,7 +30,6 @@ const (
 //
 
 func TestGetMissingValueFromHelper(t *testing.T, key string, accessorFunc func(ezif.ImageMetadata) helper.Accessor) {
-	var accessor helper.Accessor
 	var err error
 	var metadata ezif.ImageMetadata
 	var tempFile *os.File
@@ -47,9 +46,7 @@ func TestGetMissingValueFromHelper(t *testing.T, key string, accessorFunc func(e
 
 	require.Nil(t, err)
 
-	accessor = accessorFunc(metadata)
-
-	require.Nil(t, accessor, "expected not to find metadata with key '%s' in test image", key)
+	require.Nil(t, accessorFunc(metadata), "expected not to find metadata with key '%s' in test image", key)
 }
 
 func TestGetValueFromHelper(t *testing.T, key string, getFunc func(ezif.ImageMetadata) interface{},

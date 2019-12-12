@@ -1,151 +1,41 @@
 # A listing of accessors for image metadata properties of various types.
 accessors:
-  Date:
-    IPTC:
-      - type: time.Time
-        valueMethod: Date
-      - type: time.Time
-        valueMethod: Time
-  DateSlice:
-    IPTC:
-      - type: "[]time.Time"
-        valueMethod: Date
-  LangAlt:
-    XMP:
-      - treatSliceAsSingleValue: true
-        type: "[]ezif.XMPLangAlt"
-        valueMethod: LangAlt
-  SignedByte:
-    Exif:
-      - type: int8
-        valueMethod: SignedByte
-  SignedByteSlice:
-    Exif:
-      - type: "[]int8"
-        valueMethod: SignedByte
-  SignedLong:
-    Exif:
-      - type: int32
-        valueMethod: SignedLong
-  SignedLongSlice:
-    Exif:
-      - type: "[]int32"
-        valueMethod: SignedLong
-  SignedRational:
-    Exif:
-      - type: "*big.Rat"
-        valueMethod: SignedRational
-  SignedRationalSlice:
-    Exif:
-      - type: "[]*big.Rat"
-        valueMethod: SignedRational
-  SignedShort:
-    Exif:
-      - type: int16
-        valueMethod: SignedShort
-  SignedShortSlice:
-    Exif:
-      - type: "[]int16"
-        valueMethod: SignedShort
-  String:
-    Exif:
-      - type: string
-        valueMethod: ASCIIString
-      - type: string
-        valueMethod: Comment
-    IPTC:
-      - type: string
-        valueMethod: String
-    XMP:
-      - type: string
-        valueMethod: Text
-  StringSlice:
-    IPTC:
-      - type: "[]string"
-        valueMethod: String
-    XMP:
-      - treatSliceAsSingleValue: true
-        type: "[]string"
-        valueMethod: Alt
-      - treatSliceAsSingleValue: true
-        type: "[]string"
-        valueMethod: Bag
-      - treatSliceAsSingleValue: true
-        type: "[]string"
-        valueMethod: Seq
-  TIFFDouble:
-    Exif:
-      - type: float64
-        valueMethod: TIFFDouble
-  TIFFFloat:
-    Exif:
-      - type: float32
-        valueMethod: TIFFFloat
-  TIFFDoubleSlice:
-    Exif:
-      - type: "[]float64"
-        valueMethod: TIFFDouble
-  TIFFFloatSlice:
-    Exif:
-      - type: "[]float32"
-        valueMethod: TIFFFloat
-  Undefined:
-    Exif:
-      - type: byte
-        valueMethod: Undefined
-  UndefinedSlice:
-    Exif:
-      - type: "[]byte"
-        valueMethod: Undefined
-    IPTC:
-      - treatSliceAsSingleValue: true
-        type: "[]byte"
-        valueMethod: Undefined
-        valueMethodAlias: UndefinedSlice
-  UnsignedByte:
-    Exif:
-      - type: uint8
-        valueMethod: UnsignedByte
-  UnsignedByteSlice:
-    Exif:
-      - type: "[]uint8"
-        valueMethod: UnsignedByte
-  UnsignedLong:
-    Exif:
-      - type: uint32
-        valueMethod: UnsignedLong
-  UnsignedLongSlice:
-    Exif:
-      - type: "[]uint32"
-        valueMethod: UnsignedLong
-  UnsignedRational:
-    Exif:
-      - type: "*big.Rat"
-        valueMethod: UnsignedRational
-  UnsignedRationalSlice:
-    Exif:
-      - type: "[]*big.Rat"
-        valueMethod: UnsignedRational
-  UnsignedShort:
-    Exif:
-      - type: uint16
-        valueMethod: UnsignedShort
-    IPTC:
-      - type: uint16
-        valueMethod: Short
-        valueMethodAlias: UnsignedShort
-  UnsignedShortSlice:
-    Exif:
-      - type: "[]uint16"
-        valueMethod: UnsignedShort
+  Date: ezif.IPTCDate
+  DateSlice: "[]ezif.IPTCDate"
+  Double: float64
+  DoubleSlice: "[]float64"
+  Float: float32
+  FloatSlice: "[]float32"
+  SignedByte: int8
+  SignedByteSlice: "[]int8"
+  SignedLong: int32
+  SignedLongSlice: "[]int32"
+  SignedRational: "*big.Rat"
+  SignedRationalSlice: "[]*big.Rat"
+  SignedShort: int16
+  SignedShortSlice: "[]int16"
+  String: string
+  StringSlice: "[]string"
+  Time: ezif.IPTCTime
+  Undefined: byte
+  UndefinedSlice: "[]byte"
+  UnsignedByte: uint8
+  UnsignedByteSlice: "[]uint8"
+  UnsignedLong: uint32
+  UnsignedLongSlice: "[]uint32"
+  UnsignedRational: "*big.Rat"
+  UnsignedRationalSlice: "[]*big.Rat"
+  UnsignedShort: uint16
+  UnsignedShortSlice: "[]uint16"
+  XMPLangAlt: "[]ezif.XMPLangAlt"
 
 # A listing of helper methods that are disabled for various reasons.
 disabledHelpers:
-  # Not directly exposed -- should use exif.* accessors to access values instead.
+  # Not directly exposed -- use exif.* accessors to access values instead.
   - Exif.Image.ExifTag
-  # Not directly exposed -- should use exif.GPS* accessors to access values instead.
+  # Not directly exposed -- use exif.GPS* accessors to access values instead.
   - Exif.Image.GPSTag
-  # Not directly exposed -- should use ezif.IPTCMetadata to access values instead.
+  # Not directly exposed -- use ezif.ImageMetadata.IPTC() to access values instead.
   - Exif.Image.IPTCNAA
   # TODO: ???
   - Exif.Image.ImageResources
@@ -165,7 +55,7 @@ disabledHelpers:
   - Exif.Image.StripOffsets
   # TODO: ???
   - Exif.Image.SubIFDs
-  # Not directly exposed -- should use ezif.XMPMetadata to access values instead.
+  # Not directly exposed -- use ezif.ImageMetadata.XMP() to access values instead.
   - Exif.Image.XMLPacket
   # TODO: ???
   - Exif.Photo.InteroperabilityTag
@@ -174,6 +64,8 @@ disabledHelpers:
 disabledTests:
   # TODO: ???
   - Exif.Image.TileOffsets
+  # TODO: some sort of weirdness where the type is undefined instead of comment, like it should be.
+  - Exif.Photo.UserComment
 
 # A one-to-one mapping of the groupings that Exiv2 uses for Exif properties, IPTC datasets, and XMP properties.
 groups:

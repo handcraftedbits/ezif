@@ -16,7 +16,8 @@ DIR_HELPER_XMP=$(DIR_HELPER)/xmp
 
 DOCKER_IMAGE=handcraftedbits/ezif-build:$(VERSION)
 
-FILE_ACCESSOR=$(DIR_HELPER)/accessor.go
+FILE_ACCESSOR_IMPL=$(DIR_HELPER)/internal/accessor.go
+FILE_ACCESSOR_INTF=$(DIR_HELPER)/accessor.go
 FILE_DOCKERFILE=$(DIR_BASE)Dockerfile
 FILE_DOCKER_BUILT=$(DIR_BASE).docker-built
 FILE_EXIV2_METADATA=$(DIR_BASE).exiv2metadata.json
@@ -41,7 +42,8 @@ clean:
 	rm -rf $(DIR_HELPER_EXIF) $(DIR_HELPER_IPTC) $(DIR_HELPER_XMP) $(FILE_ACCESSOR) $(FILE_DOCKER_BUILT) \
 		$(FILE_EXIV2_METADATA)
 
-helpers: $(FILE_ACCESSOR) \
+helpers: $(FILE_ACCESSOR_IMPL) \
+	$(FILE_ACCESSOR_INTF) \
 	$(DIR_HELPER_EXIF)/exif.go \
 	$(DIR_HELPER_IPTC)/iptc.go \
 	$(DIR_HELPER_XMP)/xmp.go \
@@ -69,8 +71,8 @@ helpers: $(FILE_ACCESSOR) \
 	$(DIR_HELPER_XMP)/mp/mp.go \
 	$(DIR_HELPER_XMP)/mwgkw/mwgkw.go \
 	$(DIR_HELPER_XMP)/mwgrs/mwgrs.go \
-	$(DIR_HELPER_XMP)/pdf/pdf_test.go \
-	$(DIR_HELPER_XMP)/photoshop/photoshop_test.go \
+	$(DIR_HELPER_XMP)/pdf/pdf.go \
+	$(DIR_HELPER_XMP)/photoshop/photoshop.go \
 	$(DIR_HELPER_XMP)/plus/plus.go \
 	$(DIR_HELPER_XMP)/rights/rights.go \
 	$(DIR_HELPER_XMP)/tiff/tiff.go \
@@ -102,8 +104,8 @@ helpers_test: helpers $(DIR_HELPER_EXIF)/exif_test.go \
 	$(DIR_HELPER_XMP)/mp/mp_test.go \
 	$(DIR_HELPER_XMP)/mwgkw/mwgkw_test.go \
 	$(DIR_HELPER_XMP)/mwgrs/mwgrs_test.go \
-	$(DIR_HELPER_XMP)/pdf/pdf.go \
-	$(DIR_HELPER_XMP)/photoshop/photoshop.go \
+	$(DIR_HELPER_XMP)/pdf/pdf_test.go \
+	$(DIR_HELPER_XMP)/photoshop/photoshop_test.go \
 	$(DIR_HELPER_XMP)/plus/plus_test.go \
 	$(DIR_HELPER_XMP)/rights/rights_test.go \
 	$(DIR_HELPER_XMP)/tiff/tiff_test.go \
@@ -124,7 +126,10 @@ $(DIR_HELPER)/%.go: $(FILE_EXIV2_METADATA) $(FILE_SOURCEGEN_CONFIG) $(wildcard $
 $(DIR_HELPER)/%_test.go: $(FILE_EXIV2_METADATA) $(FILE_SOURCEGEN_CONFIG) $(wildcard $(DIR_CMD_SOURCEGEN)/*)
 	mkdir -p $(dir $@)
 	$(CMD_SOURCEGEN_HELPER_RUN) -g $(patsubst %/,%,$(dir $*)) -t > $@
-$(FILE_ACCESSOR): $(FILE_SOURCEGEN_CONFIG) $(wildcard $(DIR_CMD_SOURCEGEN)/*)
+$(FILE_ACCESSOR_IMPL): $(FILE_SOURCEGEN_CONFIG) $(wildcard $(DIR_CMD_SOURCEGEN)/*)
+	mkdir -p $(dir $@)
+	$(CMD_SOURCEGEN_RUN) accessor -i -p helper/internal > $@
+$(FILE_ACCESSOR_INTF): $(FILE_SOURCEGEN_CONFIG) $(wildcard $(DIR_CMD_SOURCEGEN)/*)
 	mkdir -p $(dir $@)
 	$(CMD_SOURCEGEN_RUN) accessor -p helper > $@
 
