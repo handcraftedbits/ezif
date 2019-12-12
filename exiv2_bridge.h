@@ -37,7 +37,7 @@ typedef struct valueHolder
 
 typedef void (*datumOnEndCallback)(void*, const char *);
 typedef void (*datumOnStartCallback)(void*, const char *, const char *, const char *, int, const char *, const char *,
-     int);
+     int, int);
 typedef void (*valueCallback)(void*, valueHolder*);
 
 // Struct definitions
@@ -52,7 +52,7 @@ typedef struct readHandlers
 // Function definitions
 
 void onDatumEnd(void*, const char*);
-void onDatumStart(void*, const char*, const char*, const char*, int, const char *, const char *, int);
+void onDatumStart(void*, const char*, const char*, const char*, int, const char *, const char *, int, int);
 void onValue(void*, valueHolder*);
 void readImageMetadata (const char*, exiv2Error*, valueHolder*, readHandlers*, void*);
 

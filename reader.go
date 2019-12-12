@@ -48,22 +48,13 @@ func ReadImageMetadata(filename string) (ImageMetadata, error) {
 		},
 
 		onDatumStart: func(familyName, groupName, tagName string, typeId int, label, interpretedValue string,
-			numValues int) {
-			if familyName == "Exif" && groupName == "Photo" && tagName == "UserComment" {
-				fmt.Printf("*** datum start... typeId=%d\n", typeId)
-			}
-			switch familyName {
-			case familyNameExif:
-				datum = newDatum(familyName, groupName, tagName, typeId, label, interpretedValue)
-				index = 0
-				values = make([]interface{}, numValues)
-			}
+			numValues int, repeatable bool) {
+			datum = newDatum(familyName, groupName, tagName, typeId, label, interpretedValue, repeatable)
+			index = 0
+			values = make([]interface{}, numValues)
 		},
 
 		onValue: func(valueHolder *C.struct_valueHolder) {
-			if datum.familyName == "Exif" && datum.groupName == "Photo" && datum.tagName == "UserComment" {
-				fmt.Printf("*** convert... typeId=%d\n", datum.typeId)
-			}
 			values[index] = convertValueFromValueHolder(datum.TypeID(), valueHolder)
 
 			index++
@@ -87,8 +78,9 @@ func ReadImageMetadata(filename string) (ImageMetadata, error) {
 
 type readHandlers struct {
 	onDatumEnd   func(familyName string)
-	onDatumStart func(familyName, groupName, tagName string, typeId int, label, interpretedValue string, numValues int)
-	onValue      func(valueHolder *C.struct_valueHolder)
+	onDatumStart func(familyName, groupName, tagName string, typeId int, label, interpretedValue string, numValues int,
+		repeatable bool)
+	onValue func(valueHolder *C.struct_valueHolder)
 }
 
 //
@@ -97,8 +89,8 @@ type readHandlers struct {
 
 const (
 	familyNameExif = "Exif"
-	familyNameIPTC = "IPTC"
-	familyNameXMP  = "XMP"
+	familyNameIPTC = "Iptc"
+	familyNameXMP  = "Xmp"
 )
 
 //
@@ -207,11 +199,18 @@ func onDatumEndGo(rhPointer unsafe.Pointer, familyName *C.char) {
 
 //export onDatumStartGo
 func onDatumStartGo(rhPointer unsafe.Pointer, familyName, groupName, tagName *C.char, typeId C.int,
-	label, interpretedValue *C.char, numValues C.int) {
+	label, interpretedValue *C.char, numValues C.int, repeatable C.int) {
+	var canRepeat bool
 	var handlers = gopointer.Restore(rhPointer).(*readHandlers)
 
+	if int(repeatable) == 1 {
+		canRepeat = true
+	} else {
+		canRepeat = false
+	}
+
 	handlers.onDatumStart(C.GoString(familyName), C.GoString(groupName), C.GoString(tagName), int(typeId),
-		C.GoString(label), C.GoString(interpretedValue), int(numValues))
+		C.GoString(label), C.GoString(interpretedValue), int(numValues), canRepeat)
 }
 
 //export onValueGo

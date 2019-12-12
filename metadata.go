@@ -3,7 +3,6 @@ package ezif // import "golang.handcraftedbits.com/ezif"
 import "C"
 
 import (
-	"fmt"
 	"math/big"
 	"sort"
 )
@@ -80,6 +79,7 @@ type datumImpl struct {
 	groupName        string
 	interpretedValue string
 	label            string
+	repeatable       bool
 	tagName          string
 	typeId           TypeID
 	value            interface{}
@@ -151,12 +151,11 @@ func (metadata *metadataImpl) Keys() []string {
 }
 
 func (metadata *metadataImpl) add(datum *datumImpl, values []interface{}) {
-	if datum.familyName == "Exif" && datum.groupName == "Photo" && datum.tagName == "UserComment" {
-		fmt.Printf("*** add... typeId=%d\n", datum.typeId)
-	}
 	metadata.datumMap[datum.key()] = datum
 
-	if len(values) == 1 {
+	// TODO: handle repeatable appending into an existing value.
+
+	if len(values) == 1 && !datum.repeatable {
 		datum.value = values[0]
 
 		return
@@ -312,12 +311,14 @@ func (metadata *metadataImpl) finish() {
 // Private functions
 //
 
-func newDatum(familyName, groupName, tagName string, typeId int, label, interpretedValue string) *datumImpl {
+func newDatum(familyName, groupName, tagName string, typeId int, label, interpretedValue string,
+	repeatable bool) *datumImpl {
 	return &datumImpl{
 		familyName:       familyName,
 		groupName:        groupName,
 		interpretedValue: interpretedValue,
 		label:            label,
+		repeatable:       repeatable,
 		tagName:          tagName,
 		typeId:           TypeID(typeId),
 	}

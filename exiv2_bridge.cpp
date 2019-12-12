@@ -15,6 +15,15 @@ long getAdjustedCount (Exiv2::TypeId typeId, long count)
 
           case Exiv2::TypeId::asciiString:
           case Exiv2::TypeId::comment:
+          case Exiv2::TypeId::string:
+          {
+               return 1;
+          }
+
+          // IPTC date and time values also seem to have a count that's not what we expect (1).
+
+          case Exiv2::TypeId::date:
+          case Exiv2::TypeId::time:
           {
                return 1;
           }
@@ -110,6 +119,40 @@ void populateValueHolder (valueHolder *vh, const Exiv2::Value &value, int index)
      }
 }
 
+void readMetadatum (const Exiv2::Metadatum& metadatum, std::ostringstream& buffer, int repeatable, valueHolder *vh,
+     readHandlers *handlers, void *rhPointer)
+{
+     long count = getAdjustedCount(metadatum.typeId(), metadatum.count());
+     std::string interpretedValue;
+
+     buffer.clear();
+     buffer.str("");
+
+     // The interpreted value can only(?) be obtained via operator<<.
+
+     buffer << metadatum;
+
+     interpretedValue = buffer.str();
+
+     // Notify that new IPTC data has been encountered.
+
+     handlers->dosc(rhPointer, metadatum.familyName(), metadatum.groupName().c_str(), metadatum.tagName().c_str(),
+          (int) metadatum.typeId(), metadatum.tagLabel().c_str(), interpretedValue.c_str(), count, repeatable);
+
+     // Notify that a value component has been encountered.
+
+     for (int i = 0; i < count; ++i)
+     {
+          populateValueHolder(vh, metadatum.value(), i);
+
+          handlers->vc(rhPointer, vh);
+     }
+
+     // Notify that we've finished processing the Exif data.
+
+     handlers->doec(rhPointer, metadatum.familyName());
+}
+
 void readImageMetadata (const char *filename, exiv2Error *err, valueHolder *vh, readHandlers *handlers, void *rhPointer)
 {
      try
@@ -119,44 +162,15 @@ void readImageMetadata (const char *filename, exiv2Error *err, valueHolder *vh, 
 
           image->readMetadata();
 
-          // Read Exif metadata.
-
-          auto exifData = image->exifData();
-
-          exifData.sortByKey();
-
-          for (auto &exifDatum : exifData)
+          for (auto &exifDatum : image->exifData())
           {
-               long count = getAdjustedCount(exifDatum.typeId(), exifDatum.count());
-               std::string interpretedValue;
+               readMetadatum(exifDatum, buffer, 0, vh, handlers, rhPointer);
+          }
 
-               buffer.clear();
-               buffer.str("");
-
-               // The interpreted value is obtained via operator<<.
-
-               buffer << exifDatum;
-
-               interpretedValue = buffer.str();
-
-               // Notify that new Exif data has been encountered.
-
-               handlers->dosc(rhPointer, exifDatum.familyName(), exifDatum.groupName().c_str(),
-                    exifDatum.tagName().c_str(), (int) exifDatum.typeId(), exifDatum.tagLabel().c_str(),
-                    interpretedValue.c_str(), count);
-
-               // Notify that a value component has been encountered.
-
-               for (int i = 0; i < count; ++i)
-               {
-                    populateValueHolder(vh, exifDatum.value(), i);
-
-                    handlers->vc(rhPointer, vh);
-               }
-
-               // Notify that we've finished processing the Exif data.
-
-               handlers->doec(rhPointer, exifDatum.familyName());
+          for (auto &iptcDatum : image->iptcData())
+          {
+               readMetadatum(iptcDatum, buffer, Exiv2::IptcDataSets::dataSetRepeatable(iptcDatum.tag(),
+                    iptcDatum.record()) ? 1 : 0, vh, handlers, rhPointer);
           }
      }
 
@@ -166,3 +180,4 @@ void readImageMetadata (const char *filename, exiv2Error *err, valueHolder *vh, 
           err->message = strdup(e.what());
      }
 }
+

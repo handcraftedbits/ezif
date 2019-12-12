@@ -65,8 +65,24 @@ disabledTests:
   # TODO: ???
   - Exif.Image.TileOffsets
   # TODO: some sort of weirdness where the type is undefined instead of comment, like it should be.
+  # see here: https://www.exiv2.org/doc/exifcomment_8cpp-example.html
   - Exif.Photo.UserComment
-
+  # TODO: better handling of repeatable IPTC values.
+  - Iptc.Application2.Byline
+  - Iptc.Application2.BylineTitle
+  - Iptc.Application2.Contact
+  - Iptc.Application2.Keywords
+  - Iptc.Application2.LocationCode
+  - Iptc.Application2.LocationName
+  - Iptc.Application2.ObjectAttribute
+  - Iptc.Application2.ReferenceNumber
+  - Iptc.Application2.ReferenceService
+  - Iptc.Application2.Subject
+  - Iptc.Application2.SuppCategory
+  - Iptc.Application2.Writer
+  - Iptc.Envelope.Destination
+  - Iptc.Envelope.ProductId
+  # END
 # A one-to-one mapping of the groupings that Exiv2 uses for Exif properties, IPTC datasets, and XMP properties.
 groups:
   exif:

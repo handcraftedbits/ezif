@@ -70,8 +70,8 @@ func testMaxValueSingle(info functionInfo) string {
 
 		return "\"" + getStringOfFixedLength(64) + "\""
 
-	case typeIdIPTCString, typeIdXMPText:
-		return "\"\""
+	case typeIdIPTCString:
+		return "\"" + getStringOfFixedLength(info.Tag.MaxBytes) + "\""
 
 	case typeIdIPTCDate, typeIdIPTCTime:
 		return "time.Date(9999, 1, 1, 0, 0, 0, 0, time.UTC)"

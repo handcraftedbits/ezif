@@ -108,9 +108,9 @@ var funcMap = template.FuncMap{
 var typeIdMappings = map[int]typeIdMapping{
 	typeIdAsciiString:      {"string", nil, "String"},
 	typeIdComment:          {"string", nil, "String"},
-	typeIdIPTCDate:         {"time.Time", nil, "Date"},
+	typeIdIPTCDate:         {"time.Time", []string{"time"}, "Date"},
 	typeIdIPTCString:       {"string", nil, "String"},
-	typeIdIPTCTime:         {"time.Time", nil, "Time"},
+	typeIdIPTCTime:         {"time.Time", []string{"time"}, "Time"},
 	typeIdSignedByte:       {"int8", []string{"math"}, "SignedByte"},
 	typeIdSignedLong:       {"int32", []string{"math"}, "SignedLong"},
 	typeIdSignedRational:   {"*big.Rat", []string{"math", "math/big"}, "SignedRational"},
@@ -260,6 +260,8 @@ func getFixedTagName(tagName string) string {
 
 func getFunctionMappings(familyName string, f family, groupNames []string) ([]string, map[string]functionInfo) {
 	var duplicateTagNames = getDuplicateTagNames(f, groupNames)
+	var familyNameRunes = []rune(familyName)
+	var fixedFamilyName = strings.ToUpper(string(familyNameRunes[0])) + strings.ToLower(string(familyNameRunes[1:]))
 	var functionMappings = make(map[string]functionInfo)
 	var sortedFunctionNames []string
 
@@ -276,7 +278,7 @@ func getFunctionMappings(familyName string, f family, groupNames []string) ([]st
 			sortedFunctionNames = append(sortedFunctionNames, functionName)
 
 			functionMappings[functionName] = functionInfo{
-				FullTagName: familyName + "." + groupName + "." + tagName,
+				FullTagName: fixedFamilyName + "." + groupName + "." + tagName,
 				Tag:         f[groupName][tagName],
 			}
 		}
@@ -355,7 +357,6 @@ func templateFuncRequiredImports(functionMappings map[string]functionInfo, testi
 
 	if testing {
 		importMap["testing"] = true
-		importMap["golang.handcraftedbits.com/ezif/helper/internal"] = true
 	}
 
 	for _, info := range functionMappings {
