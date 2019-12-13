@@ -58,8 +58,7 @@ func templateFuncMinValue(familyName string, info functionInfo) string {
 
 func testMaxValueSingle(info functionInfo) string {
 	switch info.Tag.TypeID {
-	// TODO: Id -> ID
-	case typeIdAsciiString, typeIdComment:
+	case typeIDAsciiString, typeIDComment:
 		// -1 and 0 are essentially "don't know" values, anything else is a fixed string length.
 
 		if info.Tag.Count > 0 {
@@ -70,50 +69,56 @@ func testMaxValueSingle(info functionInfo) string {
 
 		return "\"" + getStringOfFixedLength(64) + "\""
 
-	case typeIdIPTCString:
+	case typeIDIPTCString:
 		return "\"" + getStringOfFixedLength(info.Tag.MaxBytes) + "\""
 
-	case typeIdIPTCDate, typeIdIPTCTime:
+	case typeIDIPTCDate, typeIDIPTCTime:
 		return "time.Date(9999, 1, 1, 0, 0, 0, 0, time.UTC)"
 
-	case typeIdSignedByte:
+	case typeIDSignedByte:
 		return "int8(math.MaxInt8)"
 
-	case typeIdSignedLong:
+	case typeIDSignedLong:
 		return "int32(math.MaxInt32)"
 
-	case typeIdSignedRational:
+	case typeIDSignedRational:
 		return "big.NewRat(math.MaxInt32, math.MaxInt32 - 1)"
 
-	case typeIdSignedShort:
+	case typeIDSignedShort:
 		return "int16(math.MaxInt16)"
 
-	case typeIdTIFFDouble:
+	case typeIDTIFFDouble:
 		// The Exiv2 command seemingly can't parse the MaxFloat64 value, so we'll go with something much bigger than
 		// MaxFloat32 just to make sure we can handle a >32 bit value.
 
 		return "float64(9.0e99)"
 
-	case typeIdTIFFFloat:
+	case typeIDTIFFFloat:
 		// The Exiv2 command will return a rounded value, so we'll round down MaxFloat32 to compensate and make a direct
 		// comparison easier.
 
 		return "float32(3.4e38)"
 
-	case typeIdUndefined:
+	case typeIDUndefined:
 		return "uint8(math.MaxUint8)"
 
-	case typeIdUnsignedByte:
+	case typeIDUnsignedByte:
 		return "byte(math.MaxUint8)"
 
-	case typeIdUnsignedLong:
+	case typeIDUnsignedLong:
 		return "uint32(math.MaxUint32)"
 
-	case typeIdUnsignedRational:
+	case typeIDUnsignedRational:
 		return "big.NewRat(math.MaxUint32, math.MaxUint32 - 1)"
 
-	case typeIdUnsignedShort:
+	case typeIDUnsignedShort:
 		return "uint16(math.MaxUint16)"
+
+	case typeIDXMPAlt, typeIDXMPBag, typeIDXMPSeq, typeIDXMPText:
+		return "\"" + getStringOfFixedLength(64) + "\""
+
+	case typeIDXMPLangAlt:
+		return "nil"
 	}
 
 	return ""
@@ -121,43 +126,43 @@ func testMaxValueSingle(info functionInfo) string {
 
 func testMinValueSingle(info functionInfo) string {
 	switch info.Tag.TypeID {
-	case typeIdAsciiString, typeIdComment, typeIdIPTCString, typeIdXMPText:
+	case typeIDAsciiString, typeIDComment, typeIDIPTCString, typeIDXMPText:
 		return "\"\""
 
-	case typeIdIPTCDate, typeIdIPTCTime:
+	case typeIDIPTCDate, typeIDIPTCTime:
 		return "time.Date(1, 1, 1, 0, 0, 0, 0, time.UTC)"
 
-	case typeIdSignedByte:
+	case typeIDSignedByte:
 		return "int8(math.MinInt8)"
 
-	case typeIdSignedLong:
+	case typeIDSignedLong:
 		return "int32(math.MinInt32)"
 
-	case typeIdSignedRational:
+	case typeIDSignedRational:
 		return "big.NewRat(math.MinInt32 + 1, math.MinInt32)"
 
-	case typeIdSignedShort:
+	case typeIDSignedShort:
 		return "int16(math.MinInt16)"
 
-	case typeIdTIFFDouble:
+	case typeIDTIFFDouble:
 		return "float64(0.0)"
 
-	case typeIdTIFFFloat:
+	case typeIDTIFFFloat:
 		return "float32(0.0)"
 
-	case typeIdUndefined:
+	case typeIDUndefined:
 		return "byte(0)"
 
-	case typeIdUnsignedByte:
+	case typeIDUnsignedByte:
 		return "uint8(0)"
 
-	case typeIdUnsignedLong:
+	case typeIDUnsignedLong:
 		return "uint32(0)"
 
-	case typeIdUnsignedRational:
+	case typeIDUnsignedRational:
 		return "big.NewRat(0, 0)"
 
-	case typeIdUnsignedShort:
+	case typeIDUnsignedShort:
 		return "uint16(0)"
 	}
 

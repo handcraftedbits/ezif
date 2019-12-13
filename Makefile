@@ -112,7 +112,7 @@ helpers_test: helpers $(DIR_HELPER_EXIF)/exif_test.go \
 	$(DIR_HELPER_XMP)/tpg/tpg_test.go
 
 test: helpers_test
-	$(CMD_DOCKER_RUN) go test ./helper/iptc
+	$(CMD_DOCKER_RUN) go test ./helper/exif
 
 # File targets
 

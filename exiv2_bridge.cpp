@@ -119,7 +119,7 @@ void populateValueHolder (valueHolder *vh, const Exiv2::Value &value, int index)
      }
 }
 
-void readMetadatum (const Exiv2::Metadatum& metadatum, std::ostringstream& buffer, int repeatable, valueHolder *vh,
+void handleMetadatum (const Exiv2::Metadatum& metadatum, std::ostringstream& buffer, int repeatable, valueHolder *vh,
      readHandlers *handlers, void *rhPointer)
 {
      long count = getAdjustedCount(metadatum.typeId(), metadatum.count());
@@ -134,7 +134,7 @@ void readMetadatum (const Exiv2::Metadatum& metadatum, std::ostringstream& buffe
 
      interpretedValue = buffer.str();
 
-     // Notify that new IPTC data has been encountered.
+     // Notify that new metadata has been encountered.
 
      handlers->dosc(rhPointer, metadatum.familyName(), metadatum.groupName().c_str(), metadatum.tagName().c_str(),
           (int) metadatum.typeId(), metadatum.tagLabel().c_str(), interpretedValue.c_str(), count, repeatable);
@@ -148,7 +148,7 @@ void readMetadatum (const Exiv2::Metadatum& metadatum, std::ostringstream& buffe
           handlers->vc(rhPointer, vh);
      }
 
-     // Notify that we've finished processing the Exif data.
+     // Notify that we've finished processing the metadata.
 
      handlers->doec(rhPointer, metadatum.familyName());
 }
@@ -164,12 +164,12 @@ void readImageMetadata (const char *filename, exiv2Error *err, valueHolder *vh, 
 
           for (auto &exifDatum : image->exifData())
           {
-               readMetadatum(exifDatum, buffer, 0, vh, handlers, rhPointer);
+               handleMetadatum(exifDatum, buffer, 0, vh, handlers, rhPointer);
           }
 
           for (auto &iptcDatum : image->iptcData())
           {
-               readMetadatum(iptcDatum, buffer, Exiv2::IptcDataSets::dataSetRepeatable(iptcDatum.tag(),
+               handleMetadatum(iptcDatum, buffer, Exiv2::IptcDataSets::dataSetRepeatable(iptcDatum.tag(),
                     iptcDatum.record()) ? 1 : 0, vh, handlers, rhPointer);
           }
      }

@@ -147,20 +147,12 @@ import (
 	
 	{{- if and (IsHelperEnabled $functionInfo $disabledHelpers) (IsTestEnabled $functionInfo $disabledTests) }}
 		func Test{{ . }} (t *testing.T) {
-			var accessorFunc = func(metadata ezif.ImageMetadata) helper.Accessor {
-				return {{ . }}(metadata)
-			}
-			var getFunc = func(metadata ezif.ImageMetadata) interface{} {
-				return {{ . }}(metadata).Raw()
-			}
-
-			t.Run(internal.SubTestMaxValue, func(t *testing.T) {
-				_ = internal.TestGetValueFromHelper(t, "{{ $functionInfo.FullTagName }}", getFunc,
-					{{ MaxValue $familyName $functionInfo }})
-			})
-
-			t.Run(internal.SubTestMissingValue, func(t *testing.T) {
-				internal.TestGetMissingValueFromHelper(t, "{{ $functionInfo.FullTagName }}", accessorFunc)
+			internal.GeneratedTests(t, &internal.GeneratedTestContext{
+				AccessorFunc: func(metadata ezif.ImageMetadata) helper.Accessor {
+					return {{ . }}(metadata)
+				},
+				MaxValues: {{ MaxValue $familyName $functionInfo }},
+				Name: "{{ $functionInfo.FullTagName }}",
 			})
 		}
 	{{ end -}}

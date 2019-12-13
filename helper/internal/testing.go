@@ -1,12 +1,7 @@
 package internal // import "golang.handcraftedbits.com/ezif/helper/internal"
 
 import (
-	"bytes"
-	"fmt"
-	"io/ioutil"
-	"math/big"
 	"os"
-	"os/exec"
 	"reflect"
 	"testing"
 
@@ -17,81 +12,29 @@ import (
 )
 
 //
-// Public constants
+// Public types
 //
 
-const (
-	SubTestMaxValue     = "MaxValue"
-	SubTestMissingValue = "MissingValue"
-)
+type GeneratedTestContext struct {
+	AccessorFunc func(ezif.ImageMetadata) helper.Accessor
+	MaxValues    interface{}
+	Name         string
+}
 
 //
 // Public functions
 //
 
-func TestGetMissingValueFromHelper(t *testing.T, key string, accessorFunc func(ezif.ImageMetadata) helper.Accessor) {
-	var err error
-	var metadata ezif.ImageMetadata
-	var tempFile *os.File
+func GeneratedTests(t *testing.T, context *GeneratedTestContext) {
+	var exiv2 = newExternalExiv2(testPNG)
 
-	tempFile, err = saveTempDummyImage()
+	t.Run("MaxValue", func(t *testing.T) {
+		testGetValueFromHelper(t, exiv2, context.Name, context.AccessorFunc, context.MaxValues)
+	})
 
-	require.Nil(t, err, "could not save temporary dummy image")
-
-	defer os.Remove(tempFile.Name())
-
-	// Make sure we cannot find the key in the temporary image.
-
-	metadata, err = ezif.ReadImageMetadata(tempFile.Name())
-
-	require.Nil(t, err)
-
-	require.Nil(t, accessorFunc(metadata), "expected not to find metadata with key '%s' in test image", key)
-}
-
-func TestGetValueFromHelper(t *testing.T, key string, getFunc func(ezif.ImageMetadata) interface{},
-	valuesToSet interface{}) interface{} {
-	var err error
-	var metadata ezif.ImageMetadata
-	var normalizedValues = normalizeValuesAsSlice(valuesToSet)
-	var result interface{}
-	var stdErr string
-	var stdOut string
-	var tempFile *os.File
-
-	tempFile, err = saveTempDummyImage()
-
-	require.Nil(t, err, "could not save temporary dummy image")
-
-	//defer os.Remove(tempFile.Name())
-
-	// Write the metadata using an external copy of Exiv2 that's known to produce good results...
-
-	err, stdOut, stdErr = setMetadataViaExternalExiv2(key, tempFile.Name(), normalizedValues)
-
-	require.Nil(t, err, "could not save metadata with key '%s' via external Exiv2 command\nstdout: %s\nstderr: %s\n",
-		key, stdOut, stdErr)
-
-	// ...and make sure we can read back the exact same values that we provided.
-
-	metadata, err = ezif.ReadImageMetadata(tempFile.Name())
-
-	require.Nil(t, err)
-
-	result = getFunc(metadata)
-
-	require.NotNil(t, result, "couldn't find metadata with key '%s' in test image", key)
-
-	if len(normalizedValues) == 1 {
-		// In order for require.Exactly() to work we need to compare against the single value in the array (since this
-		// must mean that the result is a single value, not an array).
-
-		require.Exactly(t, valuesToSet, result, "expected value and result do not match")
-	} else {
-		require.Exactly(t, valuesToSet, result, "expected values and results do not match")
-	}
-
-	return result
+	t.Run("MissingValue", func(t *testing.T) {
+		testGetMissingValueFromHelper(t, context.Name, context.AccessorFunc)
+	})
 }
 
 //
@@ -100,8 +43,8 @@ func TestGetValueFromHelper(t *testing.T, key string, getFunc func(ezif.ImageMet
 
 var (
 	// Simple 1x1 PNG image for metadata testing.
-	dummyImage = []byte{137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 1, 0, 0, 0, 1, 1, 3, 0,
-		0, 0, 37, 219, 86, 202, 0, 0, 0, 6, 80, 76, 84, 69, 0, 0, 0, 255, 255, 255, 165, 217, 159, 221, 0, 0, 0, 9, 112,
+	testPNG = []byte{137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 1, 0, 0, 0, 1, 1, 3, 0, 0,
+		0, 37, 219, 86, 202, 0, 0, 0, 6, 80, 76, 84, 69, 0, 0, 0, 255, 255, 255, 165, 217, 159, 221, 0, 0, 0, 9, 112,
 		72, 89, 115, 0, 0, 14, 196, 0, 0, 14, 196, 1, 149, 43, 14, 27, 0, 0, 0, 10, 73, 68, 65, 84, 8, 153, 99, 96, 0,
 		0, 0, 2, 0, 1, 244, 113, 100, 166, 0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130}
 )
@@ -109,6 +52,17 @@ var (
 //
 // Private functions
 //
+
+func getMethodFromAccessor(accessor helper.Accessor, name string) reflect.Value {
+	return reflect.ValueOf(accessor).MethodByName(name)
+}
+
+func getRawValueFromAccessor(accessor helper.Accessor) interface{} {
+	var method = getMethodFromAccessor(accessor, "Raw")
+	var result = method.Call([]reflect.Value{})
+
+	return result[0].Interface()
+}
 
 func normalizeValuesAsSlice(values interface{}) []interface{} {
 	var kind reflect.Kind
@@ -131,57 +85,52 @@ func normalizeValuesAsSlice(values interface{}) []interface{} {
 	return []interface{}{values}
 }
 
-func saveTempDummyImage() (*os.File, error) {
+func testGetMissingValueFromHelper(t *testing.T, name string, accessorFunc func(ezif.ImageMetadata) helper.Accessor) {
 	var err error
-	var tempFile *os.File
+	var imageFilename string
+	var metadata ezif.ImageMetadata
 
-	tempFile, err = ioutil.TempFile("", "ezif-test")
+	imageFilename, err = saveImage(testPNG)
 
-	if err != nil {
-		return nil, err
-	}
+	require.Nil(t, err, "could not save temporary dummy image")
 
-	err = ioutil.WriteFile(tempFile.Name(), dummyImage, os.ModePerm)
+	defer func() {
+		_ = os.Remove(imageFilename)
+	}()
 
-	if err != nil {
-		return nil, err
-	}
+	// Make sure we cannot find the metadata in the temporary image.
 
-	return tempFile, nil
+	metadata, err = ezif.ReadImageMetadata(imageFilename)
+
+	require.Nil(t, err)
+	require.Nil(t, accessorFunc(metadata), "expected not to find metadata with name '%s' in test image", name)
 }
 
-func setMetadataViaExternalExiv2(key, filename string, values []interface{}) (error, string, string) {
-	var cmd = exec.Command("exiv2", "-M", fmt.Sprintf("set %s %s", key, valuesToExiv2Format(values)), filename)
-	var stdErr bytes.Buffer
-	var stdOut bytes.Buffer
+func testGetValueFromHelper(t *testing.T, exiv2 *externalExiv2Impl, name string,
+	accessorFunc func(ezif.ImageMetadata) helper.Accessor, valuesToSet interface{}) {
+	var err error
+	var metadata ezif.ImageMetadata
+	var result interface{}
+	var stdErr string
+	var stdOut string
 
-	cmd.Stderr = &stdErr
-	cmd.Stdout = &stdOut
+	// Write the metadata using an external copy of Exiv2 that's known to produce good results...
 
-	fmt.Printf("*** cmd: %v\n", cmd)
+	exiv2.Set(name, normalizeValuesAsSlice(valuesToSet))
 
-	if err := cmd.Run(); err != nil {
-		return err, stdOut.String(), stdErr.String()
-	}
+	err, stdOut, stdErr = exiv2.execute()
 
-	return nil, "", ""
-}
+	require.Nil(t, err, "could not save metadata with name '%s' via external Exiv2 command\nstdout: %s\nstderr: %s\n",
+		name, stdOut, stdErr)
 
-func valuesToExiv2Format(values []interface{}) string {
-	var buffer bytes.Buffer
+	// ...and make sure we can read back the exact same values that we provided.
 
-	for i, value := range values {
-		switch v := value.(type) {
-		case *big.Rat:
-			buffer.WriteString(fmt.Sprintf("%v/%v", v.Num(), v.Denom()))
-		default:
-			buffer.WriteString(fmt.Sprintf("%v", v))
-		}
+	metadata, err = ezif.ReadImageMetadata(exiv2.tempFilename)
 
-		if i < len(values)-1 {
-			buffer.WriteRune(' ')
-		}
-	}
+	require.Nil(t, err)
 
-	return buffer.String()
+	result = getRawValueFromAccessor(accessorFunc(metadata))
+
+	require.NotNil(t, result, "couldn't find metadata with name '%s' in test image", name)
+	require.Exactly(t, valuesToSet, result, "expected value(s) and results do not match")
 }

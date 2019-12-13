@@ -52,10 +52,10 @@ type tag struct {
 	MaxBytes    int    `json:"maxBytes"`
 	MinBytes    int    `json:"minBytes"`
 	Repeatable  bool   `json:"repeatable"`
-	TypeID      int    `json:"typeId"`
+	TypeID      int    `json:"typeID"`
 }
 
-type typeIdMapping struct {
+type typeIDMapping struct {
 	goType              string
 	requiredTestImports []string
 	returnType          string
@@ -67,27 +67,27 @@ type typeIdMapping struct {
 
 // Redefining these since we don't want this build tool to depend on the ezif package.
 const (
-	typeIdUnsignedByte     int = 1
-	typeIdAsciiString      int = 2
-	typeIdUnsignedShort    int = 3
-	typeIdUnsignedLong     int = 4
-	typeIdUnsignedRational int = 5
-	typeIdSignedByte       int = 6
-	typeIdUndefined        int = 7
-	typeIdSignedShort      int = 8
-	typeIdSignedLong       int = 9
-	typeIdSignedRational   int = 10
-	typeIdTIFFFloat        int = 11
-	typeIdTIFFDouble       int = 12
-	typeIdIPTCString       int = 0x10000
-	typeIdIPTCDate         int = 0x10001
-	typeIdIPTCTime         int = 0x10002
-	typeIdComment          int = 0x10003
-	typeIdXMPText          int = 0x10005
-	typeIdXMPAlt           int = 0x10006
-	typeIdXMPBag           int = 0x10007
-	typeIdXMPSeq           int = 0x10008
-	typeIdXMPLangAlt       int = 0x10009
+	typeIDUnsignedByte     int = 1
+	typeIDAsciiString      int = 2
+	typeIDUnsignedShort    int = 3
+	typeIDUnsignedLong     int = 4
+	typeIDUnsignedRational int = 5
+	typeIDSignedByte       int = 6
+	typeIDUndefined        int = 7
+	typeIDSignedShort      int = 8
+	typeIDSignedLong       int = 9
+	typeIDSignedRational   int = 10
+	typeIDTIFFFloat        int = 11
+	typeIDTIFFDouble       int = 12
+	typeIDIPTCString       int = 0x10000
+	typeIDIPTCDate         int = 0x10001
+	typeIDIPTCTime         int = 0x10002
+	typeIDComment          int = 0x10003
+	typeIDXMPText          int = 0x10005
+	typeIDXMPAlt           int = 0x10006
+	typeIDXMPBag           int = 0x10007
+	typeIDXMPSeq           int = 0x10008
+	typeIDXMPLangAlt       int = 0x10009
 )
 
 //
@@ -105,28 +105,28 @@ var funcMap = template.FuncMap{
 	"ReturnType":      templateFuncReturnType,
 }
 
-var typeIdMappings = map[int]typeIdMapping{
-	typeIdAsciiString:      {"string", nil, "String"},
-	typeIdComment:          {"string", nil, "String"},
-	typeIdIPTCDate:         {"time.Time", []string{"time"}, "Date"},
-	typeIdIPTCString:       {"string", nil, "String"},
-	typeIdIPTCTime:         {"time.Time", []string{"time"}, "Time"},
-	typeIdSignedByte:       {"int8", []string{"math"}, "SignedByte"},
-	typeIdSignedLong:       {"int32", []string{"math"}, "SignedLong"},
-	typeIdSignedRational:   {"*big.Rat", []string{"math", "math/big"}, "SignedRational"},
-	typeIdSignedShort:      {"int16", []string{"math"}, "SignedShort"},
-	typeIdTIFFDouble:       {"float64", nil, "Double"},
-	typeIdTIFFFloat:        {"float32", nil, "Float"},
-	typeIdUndefined:        {"byte", []string{"math"}, "Undefined"},
-	typeIdUnsignedByte:     {"uint8", []string{"math"}, "UnsignedByte"},
-	typeIdUnsignedLong:     {"uint32", []string{"math"}, "UnsignedLong"},
-	typeIdUnsignedRational: {"*big.Rat", []string{"math", "math/big"}, "UnsignedRational"},
-	typeIdUnsignedShort:    {"uint16", []string{"math"}, "UnsignedShort"},
-	typeIdXMPAlt:           {"[]string", nil, "StringSlice"},
-	typeIdXMPBag:           {"[]string", nil, "StringSlice"},
-	typeIdXMPLangAlt:       {"[]ezif.XMPLangAlt", nil, "XMPLangAlt"},
-	typeIdXMPSeq:           {"[]string", nil, "StringSlice"},
-	typeIdXMPText:          {"string", nil, "String"},
+var typeIDMappings = map[int]typeIDMapping{
+	typeIDAsciiString:      {"string", nil, "String"},
+	typeIDComment:          {"string", nil, "String"},
+	typeIDIPTCDate:         {"time.Time", []string{"time"}, "Date"},
+	typeIDIPTCString:       {"string", nil, "String"},
+	typeIDIPTCTime:         {"time.Time", []string{"time"}, "Time"},
+	typeIDSignedByte:       {"int8", []string{"math"}, "SignedByte"},
+	typeIDSignedLong:       {"int32", []string{"math"}, "SignedLong"},
+	typeIDSignedRational:   {"*big.Rat", []string{"math", "math/big"}, "SignedRational"},
+	typeIDSignedShort:      {"int16", []string{"math"}, "SignedShort"},
+	typeIDTIFFDouble:       {"float64", nil, "Double"},
+	typeIDTIFFFloat:        {"float32", nil, "Float"},
+	typeIDUndefined:        {"byte", []string{"math"}, "Undefined"},
+	typeIDUnsignedByte:     {"uint8", []string{"math"}, "UnsignedByte"},
+	typeIDUnsignedLong:     {"uint32", []string{"math"}, "UnsignedLong"},
+	typeIDUnsignedRational: {"*big.Rat", []string{"math", "math/big"}, "UnsignedRational"},
+	typeIDUnsignedShort:    {"uint16", []string{"math"}, "UnsignedShort"},
+	typeIDXMPAlt:           {"[]string", nil, "StringSlice"},
+	typeIDXMPBag:           {"[]string", nil, "StringSlice"},
+	typeIDXMPLangAlt:       {"[]ezif.XMPLangAlt", nil, "XMPLangAlt"},
+	typeIDXMPSeq:           {"[]string", nil, "StringSlice"},
+	typeIDXMPText:          {"string", nil, "String"},
 }
 
 //
@@ -192,7 +192,7 @@ func generateSource(familyName string, f family, packageName string, gc groupCon
 func getAdjustedCount(familyName string, info functionInfo) int {
 	switch familyName {
 	case "Exif":
-		var typeId = info.Tag.TypeID
+		var typeID = info.Tag.TypeID
 
 		// Exiv2 seems to treat the ASCII string and comment types as characters instead of full strings because the
 		// count values range from "unknown" and "any" to fixed values that don't make sense in context (e.g.,
@@ -200,7 +200,7 @@ func getAdjustedCount(familyName string, info functionInfo) int {
 		// likely that it's referring to a string with a maximum of 20 characters).  Therefore, we'll disregard count
 		// values for these types.
 
-		if typeId == typeIdAsciiString || typeId == typeIdComment {
+		if typeID == typeIDAsciiString || typeID == typeIDComment {
 			return 1
 		}
 
@@ -218,7 +218,7 @@ func getAdjustedCount(familyName string, info functionInfo) int {
 		// An exception to the above rule is that when the "undefined" type (i.e., raw bytes) is used the intention is
 		// for us to generate a byte array as the type, so we'll adjust the count accordingly.
 
-		if info.Tag.TypeID == typeIdUndefined {
+		if info.Tag.TypeID == typeIDUndefined {
 			return 2
 		}
 
@@ -289,12 +289,12 @@ func getFunctionMappings(familyName string, f family, groupNames []string) ([]st
 	return sortedFunctionNames, functionMappings
 }
 
-func getTypeIDMapping(typeId int) typeIdMapping {
-	if mapping, ok := typeIdMappings[typeId]; ok {
+func getTypeIDMapping(typeID int) typeIDMapping {
+	if mapping, ok := typeIDMappings[typeID]; ok {
 		return mapping
 	}
 
-	panic(fmt.Sprintf("invalid type id %d encountered", typeId))
+	panic(fmt.Sprintf("invalid type id %d encountered", typeID))
 }
 
 func initTemplate(name, content string) (*template.Template, error) {
