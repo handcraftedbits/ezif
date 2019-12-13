@@ -83,6 +83,7 @@ disabledTests:
   - Iptc.Envelope.Destination
   - Iptc.Envelope.ProductId
   # END
+
 # A one-to-one mapping of the groupings that Exiv2 uses for Exif properties, IPTC datasets, and XMP properties.
 groups:
   exif:
