@@ -1,7 +1,7 @@
 # A listing of accessors for image metadata properties of various types.
 accessors:
-  Date: ezif.IPTCDate
-  DateSlice: "[]ezif.IPTCDate"
+  Date: types.IPTCDate
+  DateSlice: "[]types.IPTCDate"
   Double: float64
   DoubleSlice: "[]float64"
   Float: float32
@@ -16,7 +16,7 @@ accessors:
   SignedShortSlice: "[]int16"
   String: string
   StringSlice: "[]string"
-  Time: ezif.IPTCTime
+  Time: types.IPTCTime
   Undefined: byte
   UndefinedSlice: "[]byte"
   UnsignedByte: uint8
@@ -27,7 +27,7 @@ accessors:
   UnsignedRationalSlice: "[]*big.Rat"
   UnsignedShort: uint16
   UnsignedShortSlice: "[]uint16"
-  XMPLangAlt: "[]ezif.XMPLangAlt"
+  XMPLangAlt: "[]types.XMPLangAlt"
 
 # A listing of helper methods that are disabled for various reasons.
 disabledHelpers:

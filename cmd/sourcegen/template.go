@@ -13,6 +13,7 @@ import (
 
 	"golang.handcraftedbits.com/ezif"
 	"golang.handcraftedbits.com/ezif/helper"
+	"golang.handcraftedbits.com/ezif/types"
 )
 
 //
@@ -61,7 +62,7 @@ package {{ .PackageName | LastPackage }} // import "golang.handcraftedbits.com/e
 import (
 	"math/big"
 
-	"golang.handcraftedbits.com/ezif"
+	"golang.handcraftedbits.com/ezif/types"
 )
 
 //

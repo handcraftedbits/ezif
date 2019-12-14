@@ -5,6 +5,8 @@ import "C"
 import (
 	"math/big"
 	"sort"
+
+	"golang.handcraftedbits.com/ezif/types"
 )
 
 //
@@ -17,7 +19,7 @@ type Datum interface {
 	InterpretedValue() string
 	Label() string
 	TagName() string
-	TypeID() TypeID
+	TypeID() types.ID
 	Value() interface{}
 }
 
@@ -32,43 +34,6 @@ type Metadata interface {
 	Keys() []string
 }
 
-type TypeID int
-
-// TODO: move into xmp package
-type XMPLangAlt interface {
-	Language() string
-	Value() string
-}
-
-//
-// Public constants
-//
-
-const (
-	TypeIDUnsignedByte     TypeID = 1
-	TypeIDAsciiString      TypeID = 2
-	TypeIDUnsignedShort    TypeID = 3
-	TypeIDUnsignedLong     TypeID = 4
-	TypeIDUnsignedRational TypeID = 5
-	TypeIDSignedByte       TypeID = 6
-	TypeIDUndefined        TypeID = 7
-	TypeIDSignedShort      TypeID = 8
-	TypeIDSignedLong       TypeID = 9
-	TypeIDSignedRational   TypeID = 10
-	TypeIDTIFFFloat        TypeID = 11
-	TypeIDTIFFDouble       TypeID = 12
-	TypeIDIPTCString       TypeID = 0x10000
-	TypeIDIPTCDate         TypeID = 0x10001
-	TypeIDIPTCTime         TypeID = 0x10002
-	TypeIDComment          TypeID = 0x10003
-	TypeIDXMPText          TypeID = 0x10005
-	TypeIDXMPAlt           TypeID = 0x10006
-	TypeIDXMPBag           TypeID = 0x10007
-	TypeIDXMPSeq           TypeID = 0x10008
-	TypeIDXMPLangAlt       TypeID = 0x10009
-	TypeIDInvalid          TypeID = 0x1FFFE
-)
-
 //
 // Private types
 //
@@ -81,7 +46,7 @@ type datumImpl struct {
 	label            string
 	repeatable       bool
 	tagName          string
-	typeId           TypeID
+	typeId           types.ID
 	value            interface{}
 }
 
@@ -105,7 +70,7 @@ func (datum *datumImpl) TagName() string {
 	return datum.tagName
 }
 
-func (datum *datumImpl) TypeID() TypeID {
+func (datum *datumImpl) TypeID() types.ID {
 	return datum.typeId
 }
 
@@ -165,7 +130,8 @@ func (metadata *metadataImpl) add(datum *datumImpl, values []interface{}) {
 	// keeps us from having to do a similar conversion later on.
 
 	switch datum.TypeID() {
-	case TypeIDAsciiString, TypeIDComment, TypeIDIPTCString, TypeIDXMPAlt, TypeIDXMPBag, TypeIDXMPSeq, TypeIDXMPText:
+	case types.IDAsciiString, types.IDComment, types.IDIPTCString, types.IDXMPAlt, types.IDXMPBag, types.IDXMPSeq,
+		types.IDXMPText:
 		var newSlice = make([]string, len(values))
 
 		for i, value := range values {
@@ -174,25 +140,25 @@ func (metadata *metadataImpl) add(datum *datumImpl, values []interface{}) {
 
 		datum.value = newSlice
 
-	case TypeIDIPTCDate:
-		var newSlice = make([]IPTCDate, len(values))
+	case types.IDIPTCDate:
+		var newSlice = make([]types.IPTCDate, len(values))
 
 		for i, value := range values {
-			newSlice[i] = value.(IPTCDate)
+			newSlice[i] = value.(types.IPTCDate)
 		}
 
 		datum.value = newSlice
 
-	case TypeIDIPTCTime:
-		var newSlice = make([]IPTCTime, len(values))
+	case types.IDIPTCTime:
+		var newSlice = make([]types.IPTCTime, len(values))
 
 		for i, value := range values {
-			newSlice[i] = value.(IPTCTime)
+			newSlice[i] = value.(types.IPTCTime)
 		}
 
 		datum.value = newSlice
 
-	case TypeIDSignedByte:
+	case types.IDSignedByte:
 		var newSlice = make([]int8, len(values))
 
 		for i, value := range values {
@@ -201,7 +167,7 @@ func (metadata *metadataImpl) add(datum *datumImpl, values []interface{}) {
 
 		datum.value = newSlice
 
-	case TypeIDSignedLong:
+	case types.IDSignedLong:
 		var newSlice = make([]int32, len(values))
 
 		for i, value := range values {
@@ -210,7 +176,7 @@ func (metadata *metadataImpl) add(datum *datumImpl, values []interface{}) {
 
 		datum.value = newSlice
 
-	case TypeIDSignedShort:
+	case types.IDSignedShort:
 		var newSlice = make([]int16, len(values))
 
 		for i, value := range values {
@@ -219,7 +185,7 @@ func (metadata *metadataImpl) add(datum *datumImpl, values []interface{}) {
 
 		datum.value = newSlice
 
-	case TypeIDSignedRational, TypeIDUnsignedRational:
+	case types.IDSignedRational, types.IDUnsignedRational:
 		var newSlice = make([]*big.Rat, len(values))
 
 		for i, value := range values {
@@ -228,7 +194,7 @@ func (metadata *metadataImpl) add(datum *datumImpl, values []interface{}) {
 
 		datum.value = newSlice
 
-	case TypeIDTIFFDouble:
+	case types.IDTIFFDouble:
 		var newSlice = make([]float64, len(values))
 
 		for i, value := range values {
@@ -237,7 +203,7 @@ func (metadata *metadataImpl) add(datum *datumImpl, values []interface{}) {
 
 		datum.value = newSlice
 
-	case TypeIDTIFFFloat:
+	case types.IDTIFFFloat:
 		var newSlice = make([]float32, len(values))
 
 		for i, value := range values {
@@ -246,7 +212,7 @@ func (metadata *metadataImpl) add(datum *datumImpl, values []interface{}) {
 
 		datum.value = newSlice
 
-	case TypeIDUndefined:
+	case types.IDUndefined:
 		var newSlice = make([]byte, len(values))
 
 		for i, value := range values {
@@ -255,7 +221,7 @@ func (metadata *metadataImpl) add(datum *datumImpl, values []interface{}) {
 
 		datum.value = newSlice
 
-	case TypeIDUnsignedByte:
+	case types.IDUnsignedByte:
 		var newSlice = make([]uint8, len(values))
 
 		for i, value := range values {
@@ -264,7 +230,7 @@ func (metadata *metadataImpl) add(datum *datumImpl, values []interface{}) {
 
 		datum.value = newSlice
 
-	case TypeIDUnsignedLong:
+	case types.IDUnsignedLong:
 		var newSlice = make([]uint32, len(values))
 
 		for i, value := range values {
@@ -273,7 +239,7 @@ func (metadata *metadataImpl) add(datum *datumImpl, values []interface{}) {
 
 		datum.value = newSlice
 
-	case TypeIDUnsignedShort:
+	case types.IDUnsignedShort:
 		var newSlice = make([]uint16, len(values))
 
 		for i, value := range values {
@@ -282,11 +248,11 @@ func (metadata *metadataImpl) add(datum *datumImpl, values []interface{}) {
 
 		datum.value = newSlice
 
-	case TypeIDXMPLangAlt:
-		var newSlice = make([]XMPLangAlt, len(values))
+	case types.IDXMPLangAlt:
+		var newSlice = make([]types.XMPLangAlt, len(values))
 
 		for i, value := range values {
-			newSlice[i] = value.(XMPLangAlt)
+			newSlice[i] = value.(types.XMPLangAlt)
 		}
 
 		datum.value = newSlice
@@ -320,6 +286,6 @@ func newDatum(familyName, groupName, tagName string, typeId int, label, interpre
 		label:            label,
 		repeatable:       repeatable,
 		tagName:          tagName,
-		typeId:           TypeID(typeId),
+		typeId:           types.ID(typeId),
 	}
 }

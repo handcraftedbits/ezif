@@ -16,6 +16,8 @@ import (
 	"unsafe"
 
 	gopointer "github.com/mattn/go-pointer"
+
+	"golang.handcraftedbits.com/ezif/types"
 )
 
 //
@@ -36,13 +38,13 @@ func ReadImageMetadata(filename string) (ImageMetadata, error) {
 	err = cReadImageMetadata(filename, &readHandlers{
 		onDatumEnd: func(familyName string) {
 			switch familyName {
-			case familyNameExif:
+			case "Exif":
 				imageMetadata.exifMetadata.add(datum, values)
 
-			case familyNameIPTC:
+			case "Iptc":
 				imageMetadata.iptcMetadata.add(datum, values)
 
-			case familyNameXMP:
+			case "Xmp":
 				imageMetadata.xmpMetadata.add(datum, values)
 			}
 		},
@@ -84,75 +86,58 @@ type readHandlers struct {
 }
 
 //
-// Private constants
-//
-
-const (
-	familyNameExif = "Exif"
-	familyNameIPTC = "Iptc"
-	familyNameXMP  = "Xmp"
-)
-
-//
 // Private functions
 //
 
-func convertValueFromValueHolder(typeId TypeID, valueHolder *C.struct_valueHolder) interface{} {
+func convertValueFromValueHolder(typeId types.ID, valueHolder *C.struct_valueHolder) interface{} {
 	switch typeId {
-	case TypeIDAsciiString, TypeIDComment, TypeIDIPTCString, TypeIDXMPAlt, TypeIDXMPBag, TypeIDXMPSeq, TypeIDXMPText:
+	case types.IDAsciiString, types.IDComment, types.IDIPTCString, types.IDXMPAlt, types.IDXMPBag, types.IDXMPSeq,
+		types.IDXMPText:
 		return C.GoString(valueHolder.strValue)
 
-	case TypeIDInvalid:
+	case types.IDInvalid:
 		// TODO: handle somehow?  Ignore?
 		return nil
 
-	case TypeIDIPTCDate:
-		return &iptcDateImpl{
-			day:   int(valueHolder.dayValue),
-			month: int(valueHolder.monthValue),
-			year:  int(valueHolder.yearValue),
-		}
+	case types.IDIPTCDate:
+		return types.NewIPTCDate(int(valueHolder.yearValue), time.Month(int(valueHolder.monthValue)),
+			int(valueHolder.dayValue))
 
-	case TypeIDIPTCTime:
-		return &iptcTimeImpl{
-			hour:   int(valueHolder.hourValue),
-			minute: int(valueHolder.minuteValue),
-			second: int(valueHolder.secondValue),
-			timezone: time.FixedZone("IPTC time",
-				(int(valueHolder.timezoneHourOffset)*60*60)+(int(valueHolder.timezoneMinuteOffset)*60)),
-		}
+	case types.IDIPTCTime:
+		return types.NewIPTCTime(int(valueHolder.hourValue), int(valueHolder.minuteValue), int(valueHolder.secondValue),
+			int(valueHolder.timezoneHourOffset), int(valueHolder.timezoneMinuteOffset))
 
-	case TypeIDSignedByte:
+	case types.IDSignedByte:
 		return int8(valueHolder.longValue)
 
-	case TypeIDSignedLong:
+	case types.IDSignedLong:
 		return int32(valueHolder.longValue)
 
-	case TypeIDSignedShort:
+	case types.IDSignedShort:
 		return int16(valueHolder.longValue)
 
-	case TypeIDSignedRational, TypeIDUnsignedRational:
+	case types.IDSignedRational, types.IDUnsignedRational:
 		return big.NewRat(int64(valueHolder.rationalValueN), int64(valueHolder.rationalValueD))
 
-	case TypeIDTIFFDouble:
+	case types.IDTIFFDouble:
 		return float64(valueHolder.doubleValue)
 
-	case TypeIDTIFFFloat:
+	case types.IDTIFFFloat:
 		return float32(valueHolder.doubleValue)
 
-	case TypeIDUndefined:
+	case types.IDUndefined:
 		return byte(valueHolder.longValue)
 
-	case TypeIDUnsignedByte:
+	case types.IDUnsignedByte:
 		return uint8(valueHolder.longValue)
 
-	case TypeIDUnsignedLong:
+	case types.IDUnsignedLong:
 		return uint32(valueHolder.longValue)
 
-	case TypeIDUnsignedShort:
+	case types.IDUnsignedShort:
 		return uint16(valueHolder.longValue)
 
-	case TypeIDXMPLangAlt:
+	case types.IDXMPLangAlt:
 		// TODO: fix
 		return nil
 
