@@ -120,14 +120,8 @@ func (metadata *metadataImpl) add(datum *datumImpl, values []interface{}) {
 
 	// TODO: handle repeatable appending into an existing value.
 
-	if len(values) == 1 && !datum.repeatable {
-		datum.value = values[0]
-
-		return
-	}
-
-	// For slice values, we need to do a manual conversion from an interface{} slice to a concrete-typed slice.  This
-	// keeps us from having to do a similar conversion later on.
+	// We need to do a manual conversion from an interface{} slice to a concrete-typed slice.  This keeps us from having
+	// to do a similar conversion later on.
 
 	switch datum.TypeID() {
 	case types.IDAsciiString, types.IDComment, types.IDIPTCString, types.IDXMPAlt, types.IDXMPBag, types.IDXMPSeq,

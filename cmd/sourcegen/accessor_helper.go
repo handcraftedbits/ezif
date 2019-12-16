@@ -14,6 +14,7 @@ import (
 
 type accessorInfo struct {
 	ImplName string
+	IsSlice  bool
 	Name     string
 	Type     string
 }
@@ -74,6 +75,7 @@ func getAccessorInfos(accessors map[string]string) []accessorInfo {
 
 		result = append(result, accessorInfo{
 			ImplName: implName,
+			IsSlice:  strings.HasPrefix(goType, "[]"),
 			Name:     name,
 			Type:     goType,
 		})

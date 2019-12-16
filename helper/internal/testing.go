@@ -1,6 +1,10 @@
 package internal // import "golang.handcraftedbits.com/ezif/helper/internal"
 
 import (
+	"fmt"
+	"math"
+	"math/big"
+	"math/rand"
 	"os"
 	"reflect"
 	"testing"
@@ -9,6 +13,7 @@ import (
 
 	"golang.handcraftedbits.com/ezif"
 	"golang.handcraftedbits.com/ezif/helper"
+	"golang.handcraftedbits.com/ezif/types"
 )
 
 //
@@ -17,8 +22,9 @@ import (
 
 type GeneratedTestContext struct {
 	AccessorFunc func(ezif.ImageMetadata) helper.Accessor
-	MaxValues    interface{}
+	IsSlice      bool
 	Name         string
+	TypeID       types.ID
 }
 
 //
@@ -27,14 +33,31 @@ type GeneratedTestContext struct {
 
 func GeneratedTests(t *testing.T, context *GeneratedTestContext) {
 	var exiv2 = newExternalExiv2(testPNG)
+	var sliceLength int
+
+	if context.IsSlice {
+		sliceLength = defaultSliceLength
+	} else {
+		sliceLength = 1
+	}
 
 	t.Run("MaxValue", func(t *testing.T) {
-		testGetValueFromHelper(t, exiv2, context.Name, context.AccessorFunc, context.MaxValues)
+		testGetValueFromHelper(t, exiv2, context, makeSlice(context.TypeID, sliceLength, maxValue))
 	})
 
 	t.Run("MissingValue", func(t *testing.T) {
-		testGetMissingValueFromHelper(t, context.Name, context.AccessorFunc)
+		testGetMissingValueFromHelper(t, context)
 	})
+}
+
+//
+// Private types
+//
+
+type typeInfo struct {
+	maxValue   interface{}
+	minValue   interface{}
+	emptyValue interface{}
 }
 
 //
@@ -42,50 +65,134 @@ func GeneratedTests(t *testing.T, context *GeneratedTestContext) {
 //
 
 var (
+	alphabet = []rune{'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's',
+		't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O',
+		'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
+
+	defaultSliceLength = 8
+	defaultValueLength = 32
+
 	// Simple 1x1 PNG image for metadata testing.
 	testPNG = []byte{137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 1, 0, 0, 0, 1, 1, 3, 0, 0,
 		0, 37, 219, 86, 202, 0, 0, 0, 6, 80, 76, 84, 69, 0, 0, 0, 255, 255, 255, 165, 217, 159, 221, 0, 0, 0, 9, 112,
 		72, 89, 115, 0, 0, 14, 196, 0, 0, 14, 196, 1, 149, 43, 14, 27, 0, 0, 0, 10, 73, 68, 65, 84, 8, 153, 99, 96, 0,
 		0, 0, 2, 0, 1, 244, 113, 100, 166, 0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130}
+
+	// TODO: 0 for empty numbers, right or wrong?  Maybe see if there's a better way to handle empty values.
+	// TODO: pretty sure max/min for rationals isn't right.
+	typeInfos = map[types.ID]typeInfo{
+		types.IDAsciiString:      {randomStringOfLength(defaultValueLength), randomStringOfLength(1), ""},
+		types.IDComment:          {randomStringOfLength(defaultValueLength), randomStringOfLength(1), ""},
+		types.IDIPTCDate:         {types.NewIPTCDate(9999, 12, 31), types.NewIPTCDate(1, 1, 1), nil},
+		types.IDIPTCString:       {randomStringOfLength(defaultValueLength), randomStringOfLength(1), ""},
+		types.IDIPTCTime:         {types.NewIPTCTime(23, 59, 59, 0, 0), types.NewIPTCTime(0, 0, 0, 0, 0), nil},
+		types.IDSignedByte:       {int8(math.MaxInt8), int8(math.MinInt8), int8(0)},
+		types.IDSignedLong:       {int32(math.MaxInt32), int32(math.MinInt32), int32(0)},
+		types.IDSignedRational:   {big.NewRat(math.MaxInt32, 1), big.NewRat(1, math.MaxInt32), nil},
+		types.IDSignedShort:      {int16(math.MaxInt16), int16(math.MinInt16), int16(0)},
+		types.IDTIFFDouble:       {9.0e99, -9.0e99, float64(0)},
+		types.IDTIFFFloat:        {float32(3.4e38), float32(-3.4e38), float32(0)},
+		types.IDUndefined:        {byte(math.MaxUint8), byte(0), byte(0)},
+		types.IDUnsignedByte:     {uint8(math.MaxUint8), uint8(0), uint8(0)},
+		types.IDUnsignedLong:     {uint32(math.MaxUint32), uint32(0), uint32(0)},
+		types.IDUnsignedRational: {big.NewRat(math.MaxUint32, 1), big.NewRat(1, math.MaxUint32), nil},
+		types.IDUnsignedShort:    {uint16(math.MaxUint16), uint16(0), uint16(0)},
+		types.IDXMPAlt:           {randomStringOfLength(defaultValueLength), randomStringOfLength(1), ""},
+		types.IDXMPBag:           {randomStringOfLength(defaultValueLength), randomStringOfLength(1), ""},
+		types.IDXMPSeq:           {randomStringOfLength(defaultValueLength), randomStringOfLength(1), ""},
+		types.IDXMPText:          {randomStringOfLength(defaultValueLength), randomStringOfLength(1), ""},
+		types.IDXMPLangAlt: {types.NewXMPLangAlt("en", randomStringOfLength(defaultValueLength)),
+			types.NewXMPLangAlt("en", randomStringOfLength(1)), nil},
+	}
 )
 
 //
 // Private functions
 //
 
+func emptyValue(typeID types.ID) interface{} {
+	return typeInfos[typeID].emptyValue
+}
+
+func expectEqualValues(t *testing.T, typeID types.ID, expected []interface{}, actual []interface{}) {
+	require.NotNil(t, actual)
+	require.Equal(t, len(expected), len(actual))
+
+	// Unfortunately we can't use require.Equal() directly on the two lists because big.Rat values can't necessarily be
+	// compared on a field-by-field basis -- there seems to be some sort of constant value replacement for the
+	// denominator that occurs (seemingly at random!) that throws everything off.  So we have to use big.Rat.Cmp() in
+	// that case.
+
+	for i := 0; i < len(expected); i++ {
+		if typeID == types.IDSignedRational || typeID == types.IDUnsignedRational {
+			require.True(t, expected[i].(*big.Rat).Cmp(actual[i].(*big.Rat)) == 0, fmt.Sprintf("value at index %d "+
+				"does not equal expected value", i))
+		} else {
+			require.Equal(t, expected[i], actual[i], fmt.Sprintf("value at index %d does not equal expected value", i))
+		}
+	}
+}
+
 func getMethodFromAccessor(accessor helper.Accessor, name string) reflect.Value {
 	return reflect.ValueOf(accessor).MethodByName(name)
 }
 
-func getRawValueFromAccessor(accessor helper.Accessor) interface{} {
+func getRawValueFromAccessor(accessor helper.Accessor) []interface{} {
+	var kind reflect.Kind
 	var method = getMethodFromAccessor(accessor, "Raw")
 	var result = method.Call([]reflect.Value{})
-
-	return result[0].Interface()
-}
-
-func normalizeValuesAsSlice(values interface{}) []interface{} {
-	var kind reflect.Kind
-	var value = reflect.ValueOf(values)
+	var value = result[0]
 
 	kind = value.Kind()
 
 	if kind == reflect.Array || kind == reflect.Slice {
-		var result = make([]interface{}, value.Len())
+		var intfSlice = make([]interface{}, value.Len())
 
-		// Already an array/slice, so just convert to []interface{}.
+		// Value is already an array/slice, so just convert to []interface{}.
 
 		for i := 0; i < value.Len(); i++ {
-			result[i] = value.Index(i).Interface()
+			intfSlice[i] = value.Index(i).Interface()
 		}
 
-		return result
+		return intfSlice
 	}
 
-	return []interface{}{values}
+	return []interface{}{value.Interface()}
 }
 
-func testGetMissingValueFromHelper(t *testing.T, name string, accessorFunc func(ezif.ImageMetadata) helper.Accessor) {
+func makeSlice(typeID types.ID, length int, valueFunc func(types.ID) interface{}) []interface{} {
+	var result = make([]interface{}, length)
+
+	for i := 0; i < length; i++ {
+		result[i] = valueFunc(typeID)
+	}
+
+	return result
+}
+
+func maxValue(typeID types.ID) interface{} {
+	if typeID == types.IDUnsignedRational {
+		return big.NewRat(math.MaxUint32, 1)
+	}
+
+	return typeInfos[typeID].maxValue
+}
+
+func minValue(typeID types.ID) interface{} {
+	return typeInfos[typeID].minValue
+}
+
+func randomStringOfLength(length int) string {
+	var result = make([]rune, length)
+
+	for i := 0; i < length; i++ {
+		result[i] = alphabet[rand.Int()%len(alphabet)]
+	}
+
+	return string(result)
+}
+
+func testGetMissingValueFromHelper(t *testing.T, context *GeneratedTestContext) {
 	var err error
 	var imageFilename string
 	var metadata ezif.ImageMetadata
@@ -103,25 +210,26 @@ func testGetMissingValueFromHelper(t *testing.T, name string, accessorFunc func(
 	metadata, err = ezif.ReadImageMetadata(imageFilename)
 
 	require.Nil(t, err)
-	require.Nil(t, accessorFunc(metadata), "expected not to find metadata with name '%s' in test image", name)
+	require.Nil(t, context.AccessorFunc(metadata), "expected not to find metadata with name '%s' in test image",
+		context.Name)
 }
 
-func testGetValueFromHelper(t *testing.T, exiv2 *externalExiv2Impl, name string,
-	accessorFunc func(ezif.ImageMetadata) helper.Accessor, valuesToSet interface{}) {
+func testGetValueFromHelper(t *testing.T, exiv2 *externalExiv2Impl, context *GeneratedTestContext,
+	valuesToSet []interface{}) {
 	var err error
 	var metadata ezif.ImageMetadata
-	var result interface{}
+	var result []interface{}
 	var stdErr string
 	var stdOut string
 
 	// Write the metadata using an external copy of Exiv2 that's known to produce good results...
 
-	exiv2.Set(name, normalizeValuesAsSlice(valuesToSet))
+	exiv2.Set(context.Name, valuesToSet)
 
 	err, stdOut, stdErr = exiv2.execute()
 
 	require.Nil(t, err, "could not save metadata with name '%s' via external Exiv2 command\nstdout: %s\nstderr: %s\n",
-		name, stdOut, stdErr)
+		context.Name, stdOut, stdErr)
 
 	// ...and make sure we can read back the exact same values that we provided.
 
@@ -129,8 +237,9 @@ func testGetValueFromHelper(t *testing.T, exiv2 *externalExiv2Impl, name string,
 
 	require.Nil(t, err)
 
-	result = getRawValueFromAccessor(accessorFunc(metadata))
+	result = getRawValueFromAccessor(context.AccessorFunc(metadata))
 
-	require.NotNil(t, result, "couldn't find metadata with name '%s' in test image", name)
-	require.Exactly(t, valuesToSet, result, "expected value(s) and results do not match")
+	require.NotNil(t, result, "couldn't find metadata with name '%s' in test image", context.Name)
+
+	expectEqualValues(t, context.TypeID, valuesToSet, result)
 }

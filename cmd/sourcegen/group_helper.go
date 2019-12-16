@@ -58,9 +58,7 @@ type tag struct {
 }
 
 type typeIDMapping struct {
-	goType              string
-	requiredTestImports []string
-	returnType          string
+	returnType string
 }
 
 //
@@ -70,36 +68,34 @@ type typeIDMapping struct {
 var funcMap = template.FuncMap{
 	"FixDescription":  templateFuncFixDescription,
 	"IsHelperEnabled": templateFuncIsHelperEnabled,
+	"IsSlice":         templateFuncIsSlice,
 	"IsTestEnabled":   templateFuncIsTestEnabled,
 	"LastPackage":     templateFuncLastPackage,
-	"MaxValue":        templateFuncMaxValue,
-	"MinValue":        templateFuncMinValue,
-	"RequiredImports": templateFuncRequiredImports,
 	"ReturnType":      templateFuncReturnType,
 }
 
 var typeIDMappings = map[types.ID]typeIDMapping{
-	types.IDAsciiString:      {"string", nil, "String"},
-	types.IDComment:          {"string", nil, "String"},
-	types.IDIPTCDate:         {"time.Time", []string{"time"}, "Date"},
-	types.IDIPTCString:       {"string", nil, "String"},
-	types.IDIPTCTime:         {"time.Time", []string{"time"}, "Time"},
-	types.IDSignedByte:       {"int8", []string{"math"}, "SignedByte"},
-	types.IDSignedLong:       {"int32", []string{"math"}, "SignedLong"},
-	types.IDSignedRational:   {"*big.Rat", []string{"math", "math/big"}, "SignedRational"},
-	types.IDSignedShort:      {"int16", []string{"math"}, "SignedShort"},
-	types.IDTIFFDouble:       {"float64", nil, "Double"},
-	types.IDTIFFFloat:        {"float32", nil, "Float"},
-	types.IDUndefined:        {"byte", []string{"math"}, "Undefined"},
-	types.IDUnsignedByte:     {"uint8", []string{"math"}, "UnsignedByte"},
-	types.IDUnsignedLong:     {"uint32", []string{"math"}, "UnsignedLong"},
-	types.IDUnsignedRational: {"*big.Rat", []string{"math", "math/big"}, "UnsignedRational"},
-	types.IDUnsignedShort:    {"uint16", []string{"math"}, "UnsignedShort"},
-	types.IDXMPAlt:           {"[]string", nil, "StringSlice"},
-	types.IDXMPBag:           {"[]string", nil, "StringSlice"},
-	types.IDXMPLangAlt:       {"[]ezif.XMPLangAlt", nil, "XMPLangAlt"},
-	types.IDXMPSeq:           {"[]string", nil, "StringSlice"},
-	types.IDXMPText:          {"string", nil, "String"},
+	types.IDAsciiString:      {"String"},
+	types.IDComment:          {"String"},
+	types.IDIPTCDate:         {"Date"},
+	types.IDIPTCString:       {"String"},
+	types.IDIPTCTime:         {"Time"},
+	types.IDSignedByte:       {"SignedByte"},
+	types.IDSignedLong:       {"SignedLong"},
+	types.IDSignedRational:   {"SignedRational"},
+	types.IDSignedShort:      {"SignedShort"},
+	types.IDTIFFDouble:       {"Double"},
+	types.IDTIFFFloat:        {"Float"},
+	types.IDUndefined:        {"Undefined"},
+	types.IDUnsignedByte:     {"UnsignedByte"},
+	types.IDUnsignedLong:     {"UnsignedLong"},
+	types.IDUnsignedRational: {"UnsignedRational"},
+	types.IDUnsignedShort:    {"UnsignedShort"},
+	types.IDXMPAlt:           {"String"},
+	types.IDXMPBag:           {"String"},
+	types.IDXMPLangAlt:       {"XMPLangAlt"},
+	types.IDXMPSeq:           {"String"},
+	types.IDXMPText:          {"String"},
 }
 
 //
@@ -198,9 +194,14 @@ func getAdjustedCount(familyName string, info functionInfo) int {
 		return 1
 	}
 
-	// Anything else is assumed to be XMP metadata, which we consider to be single-valued.
+	// Anything else is assumed to be XMP metadata, which is multi-valued (we'll just use a count of "2" in that case)
+	// unless the type is types.IDXMPText.
 
-	return 1
+	if info.Tag.TypeID == types.IDXMPText {
+		return 1
+	}
+
+	return 2
 }
 
 func getDuplicateTagNames(f family, groupNames []string) map[string]bool {
@@ -305,10 +306,6 @@ func templateFuncIsHelperEnabled(info functionInfo, disabledHelpers map[string]b
 	return !disabledHelpers[info.FullTagName]
 }
 
-func templateFuncIsTestEnabled(info functionInfo, disabledTests map[string]bool) bool {
-	return !disabledTests[info.FullTagName]
-}
-
 func templateFuncLastPackage(packageName string) string {
 	var index = strings.Index(packageName, "/")
 
@@ -317,43 +314,6 @@ func templateFuncLastPackage(packageName string) string {
 	}
 
 	return packageName[index+1:]
-}
-
-func templateFuncRequiredImports(functionMappings map[string]functionInfo, testing bool) []string {
-	var i = 0
-	var importMap = map[string]bool{
-		"golang.handcraftedbits.com/ezif":                 true,
-		"golang.handcraftedbits.com/ezif/helper":          true,
-		"golang.handcraftedbits.com/ezif/helper/internal": true,
-	}
-	var result []string
-
-	if testing {
-		importMap["testing"] = true
-	}
-
-	for _, info := range functionMappings {
-		var mapping = getTypeIDMapping(info.Tag.TypeID)
-		var requiredTestImports = mapping.requiredTestImports
-
-		if testing && requiredTestImports != nil {
-			for _, requiredImport := range requiredTestImports {
-				importMap[requiredImport] = true
-			}
-		}
-	}
-
-	result = make([]string, len(importMap))
-
-	for key := range importMap {
-		result[i] = key
-
-		i++
-	}
-
-	sort.Strings(result)
-
-	return result
 }
 
 func templateFuncReturnType(familyName string, info functionInfo) string {
