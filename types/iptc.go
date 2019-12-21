@@ -42,6 +42,7 @@ func NewIPTCDate(year int, month time.Month, day int) IPTCDate {
 	}
 }
 
+// TODO: renormalize minutes+hours (i.e., minutes could be > 59, so combine again.  Also flag if the offset is + or -.
 func NewIPTCTime(hour, minute, second, offsetHours, offsetMinutes int) IPTCTime {
 	return &iptcTimeImpl{
 		hour:          hour,
@@ -73,7 +74,7 @@ func (date *iptcDateImpl) Month() time.Month {
 }
 
 func (date *iptcDateImpl) String() string {
-	return fmt.Sprintf("%4d%2d%2d", date.year, date.month, date.day)
+	return fmt.Sprintf("%04d-%02d-%02d", date.year, date.month, date.day)
 }
 
 func (date *iptcDateImpl) ToGoTime(iptcTime IPTCTime) time.Time {
@@ -108,8 +109,8 @@ func (iptcTime *iptcTimeImpl) Second() int {
 }
 
 func (iptcTime *iptcTimeImpl) String() string {
-	return fmt.Sprintf("%2d%2d%2d:%2d%2d", iptcTime.hour, iptcTime.minute, iptcTime.second, iptcTime.offsetHours,
-		iptcTime.offsetMinutes)
+	return fmt.Sprintf("%02d:%02d:%02d-%02d:%02d", iptcTime.hour, iptcTime.minute, iptcTime.second,
+		iptcTime.offsetHours, iptcTime.offsetMinutes)
 }
 
 func (iptcTime *iptcTimeImpl) Timezone() *time.Location {

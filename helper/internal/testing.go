@@ -171,10 +171,6 @@ func makeSlice(typeID types.ID, length int, valueFunc func(types.ID) interface{}
 }
 
 func maxValue(typeID types.ID) interface{} {
-	if typeID == types.IDUnsignedRational {
-		return big.NewRat(math.MaxUint32, 1)
-	}
-
 	return typeInfos[typeID].maxValue
 }
 
@@ -224,7 +220,16 @@ func testGetValueFromHelper(t *testing.T, exiv2 *externalExiv2Impl, context *Gen
 
 	// Write the metadata using an external copy of Exiv2 that's known to produce good results...
 
-	exiv2.Set(context.Name, valuesToSet)
+	if context.IsSlice && (context.TypeID == types.IDIPTCDate || context.TypeID == types.IDIPTCString) {
+		// An IPTC date or string value that's marked as "repeatable" is a special case.  We can't just provide all the
+		// values in a single "set" command, we have to "add" the metadata property with a single value repeatedly.
+
+		for _, value := range valuesToSet {
+			exiv2.Add(context.Name, []interface{}{value})
+		}
+	} else {
+		exiv2.Set(context.Name, valuesToSet)
+	}
 
 	err, stdOut, stdErr = exiv2.execute()
 

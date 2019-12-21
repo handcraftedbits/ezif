@@ -28,9 +28,9 @@ func ReadImageMetadata(filename string) (ImageMetadata, error) {
 	var datum *datumImpl
 	var err error
 	var imageMetadata = &imageMetadataImpl{
-		exifMetadata: &metadataImpl{datumMap: make(map[string]Datum)},
-		iptcMetadata: &metadataImpl{datumMap: make(map[string]Datum)},
-		xmpMetadata:  &metadataImpl{datumMap: make(map[string]Datum)},
+		exifMetadata: &metadataImpl{datumMap: make(map[string]*datumImpl)},
+		iptcMetadata: &metadataImpl{datumMap: make(map[string]*datumImpl)},
+		xmpMetadata:  &metadataImpl{datumMap: make(map[string]*datumImpl)},
 	}
 	var index int
 	var values []interface{}

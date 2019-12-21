@@ -23,14 +23,12 @@ import (
 {{ range .AccessorInfos }}
 	// New{{ .Name }}Accessor creates an accessor for image metadata properties with {{ .Type }} values.
 	func New{{ .Name }}Accessor (metadata ezif.Metadata, key string) helper.{{ .Name }}Accessor {
-		var datum = metadata.Get(key)
-
-		if datum == nil {
+		if !metadata.HasKey(key) {
 			return nil
 		}
 
 		return &{{ .ImplName }}AccessorImpl{
-			datum: datum,
+			datum: metadata.Get(key),
 		}
 	}
 {{ end }}
@@ -115,8 +113,8 @@ import (
 	{{- $functionInfo := index $functionMappings . }}
 	
 	{{- if IsHelperEnabled $functionInfo $disabledHelpers }}
-		// {{ . }} is used to get or set the "{{ $functionInfo.Tag.Label }}" {{ $familyName }} metadata, which is ` +
-	`described as: "{{ $functionInfo.Tag.Description | FixDescription }}."
+		// {{ . }} is used to get or set the "{{ $functionInfo.Tag.Label }}" {{ $familyName }} metadata property, ` +
+	`which is described as: "{{ $functionInfo.Tag.Description | FixDescription }}."
 		//
 		// See the Exiv2 documentation regarding key "{{ $functionInfo.FullTagName }}" for more information.
 		//

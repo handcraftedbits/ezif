@@ -31,6 +31,7 @@ type ImageMetadata interface {
 
 type Metadata interface {
 	Get(key string) Datum
+	HasKey(key string) bool
 	Keys() []string
 }
 
@@ -103,7 +104,7 @@ func (imageMetadata *imageMetadataImpl) XMP() Metadata {
 
 // Metadata implementation
 type metadataImpl struct {
-	datumMap map[string]Datum
+	datumMap map[string]*datumImpl
 	keys     []string
 }
 
@@ -111,145 +112,202 @@ func (metadata *metadataImpl) Get(key string) Datum {
 	return metadata.datumMap[key]
 }
 
+func (metadata *metadataImpl) HasKey(key string) bool {
+	if _, ok := metadata.datumMap[key]; ok {
+		return true
+	}
+
+	return false
+}
+
 func (metadata *metadataImpl) Keys() []string {
 	return metadata.keys
 }
 
 func (metadata *metadataImpl) add(datum *datumImpl, values []interface{}) {
-	metadata.datumMap[datum.key()] = datum
+	var oldDatum = metadata.datumMap[datum.key()]
+	var valuesLength = len(values)
 
-	// TODO: handle repeatable appending into an existing value.
+	// IPTC metadata properties can be "repeatable" (at this time, this only applies to dates and strings), meaning that
+	// the property can be defined multiple times and the values still need to be preserved.  Exif and XMP properties
+	// can be repeated multiple times but we only preserve the last value.  Therefore, if the metadata property is
+	// repeatable and it already exists we won't do anything here.  Later, we'll append the new value to the existing
+	// array value.
+
+	if datum.repeatable {
+		if oldDatum == nil {
+			metadata.datumMap[datum.key()] = datum
+		} else {
+			datum = oldDatum
+		}
+
+		// Decrement valuesLength because IPTC repeatable metadata property values come in one at a time and in the event
+		// that this is the first value we want to make a slice of length 0 to append into (otherwise the first element
+		// will be a zero value).
+
+		valuesLength -= 1
+	} else {
+		metadata.datumMap[datum.key()] = datum
+	}
 
 	// We need to do a manual conversion from an interface{} slice to a concrete-typed slice.  This keeps us from having
 	// to do a similar conversion later on.
 
 	switch datum.TypeID() {
-	case types.IDAsciiString, types.IDComment, types.IDIPTCString, types.IDXMPAlt, types.IDXMPBag, types.IDXMPSeq,
-		types.IDXMPText:
-		var newSlice = make([]string, len(values))
+	case types.IDAsciiString, types.IDComment, types.IDXMPAlt, types.IDXMPBag, types.IDXMPSeq, types.IDXMPText:
+		var slice = make([]string, valuesLength)
 
 		for i, value := range values {
-			newSlice[i] = value.(string)
+			slice[i] = value.(string)
 		}
 
-		datum.value = newSlice
+		datum.value = slice
 
 	case types.IDIPTCDate:
-		var newSlice = make([]types.IPTCDate, len(values))
+		var slice []types.IPTCDate
 
-		for i, value := range values {
-			newSlice[i] = value.(types.IPTCDate)
+		if !datum.repeatable || oldDatum == nil {
+			slice = make([]types.IPTCDate, valuesLength)
+		} else {
+			slice = datum.value.([]types.IPTCDate)
 		}
 
-		datum.value = newSlice
+		for i, value := range values {
+			if !datum.repeatable {
+				slice[i] = value.(types.IPTCDate)
+			} else {
+				slice = append(slice, value.(types.IPTCDate))
+			}
+		}
+
+		datum.value = slice
+
+	case types.IDIPTCString:
+		var slice []string
+
+		if !datum.repeatable || oldDatum == nil {
+			slice = make([]string, valuesLength)
+		} else {
+			slice = datum.value.([]string)
+		}
+
+		for i, value := range values {
+			if !datum.repeatable {
+				slice[i] = value.(string)
+			} else {
+				slice = append(slice, value.(string))
+			}
+		}
+
+		datum.value = slice
 
 	case types.IDIPTCTime:
-		var newSlice = make([]types.IPTCTime, len(values))
+		var slice = make([]types.IPTCTime, valuesLength)
 
 		for i, value := range values {
-			newSlice[i] = value.(types.IPTCTime)
+			slice[i] = value.(types.IPTCTime)
 		}
 
-		datum.value = newSlice
+		datum.value = slice
 
 	case types.IDSignedByte:
-		var newSlice = make([]int8, len(values))
+		var slice = make([]int8, valuesLength)
 
 		for i, value := range values {
-			newSlice[i] = value.(int8)
+			slice[i] = value.(int8)
 		}
 
-		datum.value = newSlice
+		datum.value = slice
 
 	case types.IDSignedLong:
-		var newSlice = make([]int32, len(values))
+		var slice = make([]int32, valuesLength)
 
 		for i, value := range values {
-			newSlice[i] = value.(int32)
+			slice[i] = value.(int32)
 		}
 
-		datum.value = newSlice
+		datum.value = slice
 
 	case types.IDSignedShort:
-		var newSlice = make([]int16, len(values))
+		var slice = make([]int16, valuesLength)
 
 		for i, value := range values {
-			newSlice[i] = value.(int16)
+			slice[i] = value.(int16)
 		}
 
-		datum.value = newSlice
+		datum.value = slice
 
 	case types.IDSignedRational, types.IDUnsignedRational:
-		var newSlice = make([]*big.Rat, len(values))
+		var slice = make([]*big.Rat, valuesLength)
 
 		for i, value := range values {
-			newSlice[i] = value.(*big.Rat)
+			slice[i] = value.(*big.Rat)
 		}
 
-		datum.value = newSlice
+		datum.value = slice
 
 	case types.IDTIFFDouble:
-		var newSlice = make([]float64, len(values))
+		var slice = make([]float64, valuesLength)
 
 		for i, value := range values {
-			newSlice[i] = value.(float64)
+			slice[i] = value.(float64)
 		}
 
-		datum.value = newSlice
+		datum.value = slice
 
 	case types.IDTIFFFloat:
-		var newSlice = make([]float32, len(values))
+		var slice = make([]float32, valuesLength)
 
 		for i, value := range values {
-			newSlice[i] = value.(float32)
+			slice[i] = value.(float32)
 		}
 
-		datum.value = newSlice
+		datum.value = slice
 
 	case types.IDUndefined:
-		var newSlice = make([]byte, len(values))
+		var slice = make([]byte, valuesLength)
 
 		for i, value := range values {
-			newSlice[i] = value.(byte)
+			slice[i] = value.(byte)
 		}
 
-		datum.value = newSlice
+		datum.value = slice
 
 	case types.IDUnsignedByte:
-		var newSlice = make([]uint8, len(values))
+		var slice = make([]uint8, valuesLength)
 
 		for i, value := range values {
-			newSlice[i] = value.(uint8)
+			slice[i] = value.(uint8)
 		}
 
-		datum.value = newSlice
+		datum.value = slice
 
 	case types.IDUnsignedLong:
-		var newSlice = make([]uint32, len(values))
+		var slice = make([]uint32, valuesLength)
 
 		for i, value := range values {
-			newSlice[i] = value.(uint32)
+			slice[i] = value.(uint32)
 		}
 
-		datum.value = newSlice
+		datum.value = slice
 
 	case types.IDUnsignedShort:
-		var newSlice = make([]uint16, len(values))
+		var slice = make([]uint16, valuesLength)
 
 		for i, value := range values {
-			newSlice[i] = value.(uint16)
+			slice[i] = value.(uint16)
 		}
 
-		datum.value = newSlice
+		datum.value = slice
 
 	case types.IDXMPLangAlt:
-		var newSlice = make([]types.XMPLangAlt, len(values))
+		var slice = make([]types.XMPLangAlt, valuesLength)
 
 		for i, value := range values {
-			newSlice[i] = value.(types.XMPLangAlt)
+			slice[i] = value.(types.XMPLangAlt)
 		}
 
-		datum.value = newSlice
+		datum.value = slice
 	}
 }
 
