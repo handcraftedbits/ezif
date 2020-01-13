@@ -2,6 +2,7 @@
 
 CMD_DOCKER_RUN=docker run -it --rm -v $(DIR_BASE):/ezif $(DOCKER_IMAGE)
 CMD_EXIV2METADATA_RUN=$(CMD_DOCKER_RUN) go run ./cmd/exiv2metadata
+CMD_SOURCEGEN_ACCESSOR_RUN=go run $(DIR_CMD_SOURCEGEN)
 CMD_SOURCEGEN_HELPER_RUN=$(CMD_SOURCEGEN_RUN) helper -m $(FILE_EXIV2_METADATA)
 CMD_SOURCEGEN_RUN=go run $(DIR_CMD_SOURCEGEN) -c $(FILE_SOURCEGEN_CONFIG)
 
@@ -128,10 +129,10 @@ $(DIR_HELPER)/%_test.go: $(FILE_EXIV2_METADATA) $(FILE_SOURCEGEN_CONFIG) $(wildc
 	$(CMD_SOURCEGEN_HELPER_RUN) -g $(patsubst %/,%,$(dir $*)) -t > $@
 $(FILE_ACCESSOR_IMPL): $(FILE_SOURCEGEN_CONFIG) $(wildcard $(DIR_CMD_SOURCEGEN)/*)
 	mkdir -p $(dir $@)
-	$(CMD_SOURCEGEN_RUN) accessor -i -p helper/internal > $@
+	$(CMD_SOURCEGEN_ACCESSOR_RUN) accessor -i -p helper/internal > $@
 $(FILE_ACCESSOR_INTF): $(FILE_SOURCEGEN_CONFIG) $(wildcard $(DIR_CMD_SOURCEGEN)/*)
 	mkdir -p $(dir $@)
-	$(CMD_SOURCEGEN_RUN) accessor -p helper > $@
+	$(CMD_SOURCEGEN_ACCESSOR_RUN) accessor -p helper > $@
 
 $(FILE_EXIV2_METADATA): $(wildcard $(DIR_CMD_EXIV2METADATA)/*) $(FILE_DOCKER_BUILT)
 	$(CMD_EXIV2METADATA_RUN) > $@

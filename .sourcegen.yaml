@@ -1,34 +1,3 @@
-# A listing of accessors for image metadata properties of various types.
-accessors:
-  Date: types.IPTCDate
-  DateSlice: "[]types.IPTCDate"
-  Double: float64
-  DoubleSlice: "[]float64"
-  Float: float32
-  FloatSlice: "[]float32"
-  SignedByte: int8
-  SignedByteSlice: "[]int8"
-  SignedLong: int32
-  SignedLongSlice: "[]int32"
-  SignedRational: "*big.Rat"
-  SignedRationalSlice: "[]*big.Rat"
-  SignedShort: int16
-  SignedShortSlice: "[]int16"
-  String: string
-  StringSlice: "[]string"
-  Time: types.IPTCTime
-  Undefined: byte
-  UndefinedSlice: "[]byte"
-  UnsignedByte: uint8
-  UnsignedByteSlice: "[]uint8"
-  UnsignedLong: uint32
-  UnsignedLongSlice: "[]uint32"
-  UnsignedRational: "*big.Rat"
-  UnsignedRationalSlice: "[]*big.Rat"
-  UnsignedShort: uint16
-  UnsignedShortSlice: "[]uint16"
-  XMPLangAlt: "[]types.XMPLangAlt"
-
 # A listing of helper methods that are disabled for various reasons.
 disabledHelpers:
   # Not directly exposed -- use exif.* accessors to access values instead.

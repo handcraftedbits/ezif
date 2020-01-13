@@ -25,10 +25,45 @@ type accessorTemplateContext struct {
 }
 
 //
+// Private variables
+//
+
+var accessors = map[string]string{
+	"Date":                  "types.IPTCDate",
+	"DateSlice":             "[]types.IPTCDate",
+	"Double":                "float64",
+	"DoubleSlice":           "[]float64",
+	"Float":                 "float32",
+	"FloatSlice":            "[]float32",
+	"SignedByte":            "int8",
+	"SignedByteSlice":       "[]int8",
+	"SignedLong":            "int32",
+	"SignedLongSlice":       "[]int32",
+	"SignedRational":        "*big.Rat",
+	"SignedRationalSlice":   "[]*big.Rat",
+	"SignedShort":           "int16",
+	"SignedShortSlice":      "[]int16",
+	"String":                "string",
+	"StringSlice":           "[]string",
+	"Time":                  "types.IPTCTime",
+	"Undefined":             "byte",
+	"UndefinedSlice":        "[]byte",
+	"UnsignedByte":          "uint8",
+	"UnsignedByteSlice":     "[]uint8",
+	"UnsignedLong":          "uint32",
+	"UnsignedLongSlice":     "[]uint32",
+	"UnsignedRational":      "*big.Rat",
+	"UnsignedRationalSlice": "[]*big.Rat",
+	"UnsignedShort":         "uint16",
+	"UnsignedShortSlice":    "[]uint16",
+	"XMPLangAlt":            "[]types.XMPLangAlt",
+}
+
+//
 // Private functions
 //
 
-func generateAccessorSource(packageName string, accessors map[string]string, templateBody string) (string, error) {
+func generateAccessorSource(packageName string, templateBody string) (string, error) {
 	var buffer bytes.Buffer
 	var err error
 	var formattedSource []byte

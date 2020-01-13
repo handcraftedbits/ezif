@@ -141,9 +141,9 @@ func (metadata *metadataImpl) add(datum *datumImpl, values []interface{}) {
 			datum = oldDatum
 		}
 
-		// Decrement valuesLength because IPTC repeatable metadata property values come in one at a time and in the event
-		// that this is the first value we want to make a slice of length 0 to append into (otherwise the first element
-		// will be a zero value).
+		// Decrement valuesLength because IPTC repeatable metadata property values come in one at a time and in the
+		// event that this is the first value we want to make a slice of length 0 to append into (otherwise the first
+		// element will be a zero value).
 
 		valuesLength -= 1
 	} else {

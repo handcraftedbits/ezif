@@ -17,7 +17,6 @@ import (
 //
 
 type sourcegenConfig struct {
-	Accessors       map[string]string      `yaml:"accessors"`
 	DisabledHelpers []string               `yaml:"disabledHelpers"`
 	DisabledTests   []string               `yaml:"disabledTests"`
 	Groups          map[string]groupConfig `yaml:"groups"`
@@ -31,16 +30,9 @@ var commandAccessor = &cobra.Command{
 	Use:   "accessor",
 	Short: "Generate metadata property accessors",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		var config *sourcegenConfig
 		var err error
 		var generatedSource string
 		var templateSource string
-
-		config, err = getSourcegenConfig()
-
-		if err != nil {
-			return err
-		}
 
 		if flagAccessorImpl {
 			templateSource = templateAccessorImplSource
@@ -48,7 +40,7 @@ var commandAccessor = &cobra.Command{
 			templateSource = templateAccessorIntfSource
 		}
 
-		generatedSource, err = generateAccessorSource(flagAccessorPackage, config.Accessors, templateSource)
+		generatedSource, err = generateAccessorSource(flagAccessorPackage, templateSource)
 
 		if err != nil {
 			return err
@@ -174,18 +166,16 @@ func main() {
 		"instead of interface code, should be generated")
 	commandAccessor.Flags().StringVarP(&flagAccessorPackage, "package", "p", "", "the package for generated accessor "+
 		"code")
+	commandHelper.Flags().StringVarP(&flagConfig, "config", "c", "", "path to sourcegen configuration file")
 	commandHelper.Flags().StringVarP(&flagHelperGroup, "group", "g", "", "name of group to use for code generation")
 	commandHelper.Flags().StringVarP(&flagHelperMetadata, "metadata", "m", "", "path to JSON-formatted Exiv2 metadata")
 	commandHelper.Flags().BoolVarP(&flagHelperTest, "test", "t", false, "whether or not test code, instead of helper "+
 		"code, should be generated")
 
-	commandRoot.PersistentFlags().StringVarP(&flagConfig, "config", "c", "", "path to sourcegen configuration file")
-
 	_ = commandAccessor.MarkFlagRequired("package")
+	_ = commandHelper.MarkFlagRequired("config")
 	_ = commandHelper.MarkFlagRequired("group")
 	_ = commandHelper.MarkFlagRequired("metadata")
-
-	_ = commandRoot.MarkFlagRequired("config")
 
 	commandRoot.AddCommand(commandAccessor, commandHelper)
 
