@@ -44,6 +44,7 @@ var accessors = map[string]string{
 	"SignedShort":           "int16",
 	"SignedShortSlice":      "[]int16",
 	"String":                "string",
+	"StringMap":             "map[string]string",
 	"StringSlice":           "[]string",
 	"Time":                  "types.IPTCTime",
 	"Undefined":             "byte",
@@ -56,7 +57,6 @@ var accessors = map[string]string{
 	"UnsignedRationalSlice": "[]*big.Rat",
 	"UnsignedShort":         "uint16",
 	"UnsignedShortSlice":    "[]uint16",
-	"XMPLangAlt":            "map[string]string",
 }
 
 //

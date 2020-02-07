@@ -95,7 +95,7 @@ var typeIDMappings = map[types.ID]typeIDMapping{
 	types.IDUnsignedShort:    {"UnsignedShort"},
 	types.IDXMPAlt:           {"String"},
 	types.IDXMPBag:           {"String"},
-	types.IDXMPLangAlt:       {"XMPLangAlt"},
+	types.IDXMPLangAlt:       {"StringMap"},
 	types.IDXMPSeq:           {"String"},
 	types.IDXMPText:          {"String"},
 }
