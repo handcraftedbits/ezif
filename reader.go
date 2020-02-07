@@ -37,21 +37,22 @@ func ReadImageMetadata(filename string) (ImageMetadata, error) {
 
 	err = cReadImageMetadata(filename, &readHandlers{
 		onDatumEnd: func(familyName string) {
-			switch familyName {
-			case "Exif":
+			switch types.Family(familyName) {
+			case types.FamilyExif:
 				imageMetadata.exifMetadata.add(datum, values)
 
-			case "Iptc":
+			case types.FamilyIPTC:
 				imageMetadata.iptcMetadata.add(datum, values)
 
-			case "Xmp":
+			case types.FamilyXMP:
 				imageMetadata.xmpMetadata.add(datum, values)
 			}
 		},
 
 		onDatumStart: func(familyName, groupName, tagName string, typeId int, label, interpretedValue string,
 			numValues int, repeatable bool) {
-			datum = newDatum(familyName, groupName, tagName, typeId, label, interpretedValue, repeatable)
+			datum = newDatum(types.Family(familyName), groupName, tagName, types.ID(typeId), label, interpretedValue,
+				repeatable)
 			index = 0
 			values = make([]interface{}, numValues)
 		},
@@ -83,6 +84,11 @@ type readHandlers struct {
 	onDatumStart func(familyName, groupName, tagName string, typeId int, label, interpretedValue string, numValues int,
 		repeatable bool)
 	onValue func(valueHolder *C.struct_valueHolder)
+}
+
+type xmpLangAltEntry struct {
+	language string
+	value    string
 }
 
 //
@@ -138,8 +144,10 @@ func convertValueFromValueHolder(typeId types.ID, valueHolder *C.struct_valueHol
 		return uint16(valueHolder.longValue)
 
 	case types.IDXMPLangAlt:
-		// TODO: fix
-		return nil
+		return &xmpLangAltEntry{
+			language: C.GoString(valueHolder.langValue),
+			value:    C.GoString(valueHolder.strValue),
+		}
 
 	default:
 		return nil

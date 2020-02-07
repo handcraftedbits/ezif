@@ -10,12 +10,13 @@ long getAdjustedCount (Exiv2::TypeId typeId, long count)
 {
      switch (typeId)
      {
-          // Exiv2 treats Exif string values as an array of characters, but we're interested in the value as a single
+          // Exiv2 treats string values as an array of characters, but we're interested in the value as a single string,
           // string, so we'll adjust the count accordingly.
 
           case Exiv2::TypeId::asciiString:
           case Exiv2::TypeId::comment:
           case Exiv2::TypeId::string:
+          case Exiv2::TypeId::xmpText:
           {
                return 1;
           }
@@ -32,8 +33,10 @@ long getAdjustedCount (Exiv2::TypeId typeId, long count)
      return count;
 }
 
-void populateValueHolder (valueHolder *vh, const Exiv2::Value &value, int index)
+void notifyValueCreated (valueHolder *vh, const Exiv2::Value &value, int index, readHandlers *handlers, void *rhPointer)
 {
+     vh->strValue = NULL;
+
      switch (value.typeId())
      {
           case Exiv2::TypeId::asciiString:
@@ -43,8 +46,8 @@ void populateValueHolder (valueHolder *vh, const Exiv2::Value &value, int index)
           case Exiv2::TypeId::xmpBag:
           case Exiv2::TypeId::xmpSeq:
           case Exiv2::TypeId::xmpText:
-          {
-               vh->strValue = static_cast<const Exiv2::StringValueBase&>(value).value_.c_str();
+         {
+               vh->strValue = strdup(value.toString(index).c_str());
 
                break;
           }
@@ -60,17 +63,24 @@ void populateValueHolder (valueHolder *vh, const Exiv2::Value &value, int index)
                break;
           }
 
-          case Exiv2::TypeId::time:
+          case Exiv2::TypeId::langAlt:
           {
-               auto time = static_cast<const Exiv2::TimeValue&>(value).getTime();
+               auto langAltMap = static_cast<const Exiv2::LangAltValue&>(value).value_;
 
-               vh->hourValue = time.hour;
-               vh->minuteValue = time.minute;
-               vh->secondValue = time.second;
-               vh->timezoneHourOffset = time.tzHour;
-               vh->timezoneMinuteOffset = time.tzMinute;
+               // XMPLangAlt is a little different from normal values since it's a map.  We have to iterate over it and
+               // notify that a new value has been created for each key/value pair.
 
-               break;
+               for (auto langAlt : langAltMap)
+               {
+                    vh->langValue = langAlt.first.c_str();
+                    vh->strValue = strdup(langAlt.second.c_str());
+
+                    handlers->vc(rhPointer, vh);
+
+                    free(vh->strValue);
+               }
+
+               return;
           }
 
           case Exiv2::TypeId::signedByte:
@@ -116,6 +126,26 @@ void populateValueHolder (valueHolder *vh, const Exiv2::Value &value, int index)
 
                break;
           }
+
+          case Exiv2::TypeId::time:
+          {
+               auto time = static_cast<const Exiv2::TimeValue&>(value).getTime();
+
+               vh->hourValue = time.hour;
+               vh->minuteValue = time.minute;
+               vh->secondValue = time.second;
+               vh->timezoneHourOffset = time.tzHour;
+               vh->timezoneMinuteOffset = time.tzMinute;
+
+               break;
+          }
+     }
+
+     handlers->vc(rhPointer, vh);
+
+     if (vh->strValue)
+     {
+          free(vh->strValue);
      }
 }
 
@@ -139,13 +169,9 @@ void handleMetadatum (const Exiv2::Metadatum& metadatum, std::ostringstream& buf
      handlers->dosc(rhPointer, metadatum.familyName(), metadatum.groupName().c_str(), metadatum.tagName().c_str(),
           (int) metadatum.typeId(), metadatum.tagLabel().c_str(), interpretedValue.c_str(), count, repeatable);
 
-     // Notify that a value component has been encountered.
-
      for (int i = 0; i < count; ++i)
      {
-          populateValueHolder(vh, metadatum.value(), i);
-
-          handlers->vc(rhPointer, vh);
+          notifyValueCreated(vh, metadatum.value(), i, handlers, rhPointer);
      }
 
      // Notify that we've finished processing the metadata.
@@ -171,6 +197,11 @@ void readImageMetadata (const char *filename, exiv2Error *err, valueHolder *vh, 
           {
                handleMetadatum(iptcDatum, buffer, Exiv2::IptcDataSets::dataSetRepeatable(iptcDatum.tag(),
                     iptcDatum.record()) ? 1 : 0, vh, handlers, rhPointer);
+          }
+
+          for (auto &xmpDatum : image->xmpData())
+          {
+               handleMetadatum(xmpDatum, buffer, 0, vh, handlers, rhPointer);
           }
      }
 

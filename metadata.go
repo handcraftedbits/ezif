@@ -14,7 +14,7 @@ import (
 //
 
 type Datum interface {
-	FamilyName() string
+	Family() types.Family
 	GroupName() string
 	InterpretedValue() string
 	Label() string
@@ -41,7 +41,7 @@ type Metadata interface {
 
 // Datum implementation
 type datumImpl struct {
-	familyName       string
+	family           types.Family
 	groupName        string
 	interpretedValue string
 	label            string
@@ -51,8 +51,8 @@ type datumImpl struct {
 	value            interface{}
 }
 
-func (datum *datumImpl) FamilyName() string {
-	return datum.familyName
+func (datum *datumImpl) Family() types.Family {
+	return datum.family
 }
 
 func (datum *datumImpl) GroupName() string {
@@ -80,7 +80,7 @@ func (datum *datumImpl) Value() interface{} {
 }
 
 func (datum *datumImpl) key() string {
-	return datum.familyName + "." + datum.groupName + "." + datum.tagName
+	return string(datum.family) + "." + datum.groupName + "." + datum.tagName
 }
 
 // ImageMetadata implementation
@@ -300,14 +300,19 @@ func (metadata *metadataImpl) add(datum *datumImpl, values []interface{}) {
 
 		datum.value = slice
 
-	case types.IDXMPLangAlt:
-		var slice = make([]types.XMPLangAlt, valuesLength)
+	// XMPLangAlt is a special case, there's really only a single "value", which is a map.
 
-		for i, value := range values {
-			slice[i] = value.(types.XMPLangAlt)
+	case types.IDXMPLangAlt:
+		var langAlt = make(map[string]string)
+
+		for _, value := range values {
+			curValue := value.(*xmpLangAltEntry)
+
+			langAlt[curValue.language] = curValue.value
 		}
 
-		datum.value = slice
+		// TODO: can this be done as a single value instead of a slice?
+		datum.value = []map[string]string{langAlt}
 	}
 }
 
@@ -329,15 +334,15 @@ func (metadata *metadataImpl) finish() {
 // Private functions
 //
 
-func newDatum(familyName, groupName, tagName string, typeId int, label, interpretedValue string,
+func newDatum(family types.Family, groupName, tagName string, typeId types.ID, label, interpretedValue string,
 	repeatable bool) *datumImpl {
 	return &datumImpl{
-		familyName:       familyName,
+		family:           family,
 		groupName:        groupName,
 		interpretedValue: interpretedValue,
 		label:            label,
 		repeatable:       repeatable,
 		tagName:          tagName,
-		typeId:           types.ID(typeId),
+		typeId:           typeId,
 	}
 }

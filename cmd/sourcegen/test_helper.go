@@ -8,8 +8,8 @@ func generateGroupTestSource(familyName string, f family, packageName string, gc
 	return generateSource(familyName, f, packageName, gc, templateGroupTestSource)
 }
 
-func templateFuncIsSlice(familyName string, info functionInfo) bool {
-	return getAdjustedCount(familyName, info) != 1
+func templateFuncIsSlice(info functionInfo) bool {
+	return getAdjustedCount(info) != 1
 }
 
 func templateFuncIsTestEnabled(info functionInfo, disabledTests map[string]bool) bool {

@@ -63,8 +63,6 @@ func (exiv2 *externalExiv2Impl) execute() (error, string, string) {
 	command.Stderr = &stdErr
 	command.Stdout = &stdOut
 
-	fmt.Printf("*** cmd: %v\n", command)
-
 	if err := command.Run(); err != nil {
 		return err, stdOut.String(), stdErr.String()
 	}
@@ -83,6 +81,8 @@ func convertValuesToExiv2Format(values []interface{}) string {
 		switch v := value.(type) {
 		case *big.Rat:
 			buffer.WriteString(fmt.Sprintf("%v/%v", v.Num(), v.Denom()))
+		case xmpLangAltEntry:
+			buffer.WriteString(fmt.Sprintf("lang=\"%s\" %s", v.language, v.value))
 		default:
 			buffer.WriteString(fmt.Sprintf("%v", v))
 		}

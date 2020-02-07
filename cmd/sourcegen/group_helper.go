@@ -20,9 +20,11 @@ type families map[string]family
 type family map[string]group
 
 type functionInfo struct {
+	Family      types.Family
 	FullTagName string
 	Tag         tag
 }
+
 type group map[string]tag
 
 type groupConfig struct {
@@ -39,7 +41,6 @@ type groupConfig struct {
 type helperTemplateContext struct {
 	DisabledHelpers    map[string]bool
 	DisabledTests      map[string]bool
-	FamilyName         string
 	FunctionMappings   map[string]functionInfo
 	FunctionNames      []string
 	PackageDescription string
@@ -71,6 +72,7 @@ var funcMap = template.FuncMap{
 	"IsSlice":         templateFuncIsSlice,
 	"IsTestEnabled":   templateFuncIsTestEnabled,
 	"LastPackage":     templateFuncLastPackage,
+	"MetadataName":    templateFuncMetadataName,
 	"ReturnType":      templateFuncReturnType,
 }
 
@@ -135,7 +137,6 @@ func generateSource(familyName string, f family, packageName string, gc groupCon
 	err = templateRoot.Execute(&buffer, &helperTemplateContext{
 		DisabledHelpers:    gc.disabledHelpers,
 		DisabledTests:      gc.disabledTests,
-		FamilyName:         familyName,
 		FunctionMappings:   functionMappings,
 		FunctionNames:      functionNames,
 		PackageDescription: gc.Description,
@@ -158,9 +159,9 @@ func generateSource(familyName string, f family, packageName string, gc groupCon
 	return string(formattedSource), nil
 }
 
-func getAdjustedCount(familyName string, info functionInfo) int {
-	switch familyName {
-	case "Exif":
+func getAdjustedCount(info functionInfo) int {
+	switch info.Family {
+	case types.FamilyExif:
 		var typeID = info.Tag.TypeID
 
 		// Exiv2 seems to treat the ASCII string and comment types as characters instead of full strings because the
@@ -175,7 +176,7 @@ func getAdjustedCount(familyName string, info functionInfo) int {
 
 		return info.Tag.Count
 
-	case "IPTC":
+	case types.FamilyIPTC:
 		// IPTC datasets don't have a count value, they're marked as "repeatable" or not.  We can just adjust the count
 		// to 1 or 2 depending on the value of that boolean -- the important thing is whether or not downstream callers
 		// realize they're dealing with a single value or a slice.
@@ -195,9 +196,9 @@ func getAdjustedCount(familyName string, info functionInfo) int {
 	}
 
 	// Anything else is assumed to be XMP metadata, which is multi-valued (we'll just use a count of "2" in that case)
-	// unless the type is types.IDXMPText.
+	// unless the type is types.IDXMPText or types.IDXMPLangAlt (technically multi-valued, but exposed through a map).
 
-	if info.Tag.TypeID == types.IDXMPText {
+	if info.Tag.TypeID == types.IDXMPText || info.Tag.TypeID == types.IDXMPLangAlt {
 		return 1
 	}
 
@@ -234,8 +235,6 @@ func getFixedTagName(tagName string) string {
 
 func getFunctionMappings(familyName string, f family, groupNames []string) ([]string, map[string]functionInfo) {
 	var duplicateTagNames = getDuplicateTagNames(f, groupNames)
-	var familyNameRunes = []rune(familyName)
-	var fixedFamilyName = strings.ToUpper(string(familyNameRunes[0])) + strings.ToLower(string(familyNameRunes[1:]))
 	var functionMappings = make(map[string]functionInfo)
 	var sortedFunctionNames []string
 
@@ -252,7 +251,8 @@ func getFunctionMappings(familyName string, f family, groupNames []string) ([]st
 			sortedFunctionNames = append(sortedFunctionNames, functionName)
 
 			functionMappings[functionName] = functionInfo{
-				FullTagName: fixedFamilyName + "." + groupName + "." + tagName,
+				Family:      types.Family(familyName),
+				FullTagName: familyName + "." + groupName + "." + tagName,
 				Tag:         f[groupName][tagName],
 			}
 		}
@@ -316,8 +316,16 @@ func templateFuncLastPackage(packageName string) string {
 	return packageName[index+1:]
 }
 
-func templateFuncReturnType(familyName string, info functionInfo) string {
-	var count = getAdjustedCount(familyName, info)
+func templateFuncMetadataName(info functionInfo) string {
+	if info.Family == types.FamilyExif {
+		return string(types.FamilyExif)
+	}
+
+	return strings.ToUpper(string(info.Family))
+}
+
+func templateFuncReturnType(info functionInfo) string {
+	var count = getAdjustedCount(info)
 	var result = getTypeIDMapping(info.Tag.TypeID).returnType
 
 	if count != 1 {

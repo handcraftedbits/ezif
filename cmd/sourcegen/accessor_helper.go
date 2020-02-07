@@ -56,7 +56,7 @@ var accessors = map[string]string{
 	"UnsignedRationalSlice": "[]*big.Rat",
 	"UnsignedShort":         "uint16",
 	"UnsignedShortSlice":    "[]uint16",
-	"XMPLangAlt":            "[]types.XMPLangAlt",
+	"XMPLangAlt":            "map[string]string",
 }
 
 //

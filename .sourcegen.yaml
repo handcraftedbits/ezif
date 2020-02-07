@@ -28,6 +28,9 @@ disabledHelpers:
   - Exif.Image.XMLPacket
   # TODO: ???
   - Exif.Photo.InteroperabilityTag
+  # TODO: aliased XMP properties... add support for these somehow.
+  # Deprecated in favor of Xmp.dc.rights
+  - Xmp.xmpDM.copyright
 
 # A listing of tests that are disabled for various reasons.
 disabledTests:
@@ -46,169 +49,169 @@ groups:
     reference: https://www.exiv2.org/tags.html
   iptc:
     description: IPTC datasets defined according to the specification of the IPTC Information Interchange Model (IIM)
-    family: IPTC
+    family: Iptc
     regexp: ^(Application2|Envelope)$
     reference: https://www.exiv2.org/iptc.html
   xmp:
     description: XMP properties that provide basic descriptive information (XMP Basic schema)
-    family: XMP
+    family: Xmp
     regexp: ^xmp$
     reference: https://www.exiv2.org/tags-xmp-xmp.html
   xmp/acdsee:
     description: custom XMP properties written by ACDSee applications
-    family: XMP
+    family: Xmp
     regexp: ^acdsee$
     reference: https://www.exiv2.org/tags-xmp-acdsee.html
   xmp/aux:
     description: >-
       additional XMP properties that describe the equipment used to produce Exif data (Exif Schema for Additional Exif
       Properties)
-    family: XMP
+    family: Xmp
     regexp: ^aux$
     reference: https://www.exiv2.org/tags-xmp-aux.html
   xmp/bj:
     description: very simple workflow or job information properties (XMP Basic Job Ticket Schema)
-    family: XMP
+    family: Xmp
     regexp: ^xmpBJ$
     reference: https://www.exiv2.org/tags-xmp-xmpBJ.html
   xmp/crs:
     description: XMP properties associated with image files produced in camera raw mode (Camera Raw Schema)
-    family: XMP
+    family: Xmp
     regexp: ^crs$
     reference: https://www.exiv2.org/tags-xmp-crs.html
   xmp/crss:
     description: >-
       XMP properties used to store development settings for raw image files (Camera Raw Saved Settings Schema)
-    family: XMP
+    family: Xmp
     regexp: ^crss$
     reference: https://www.exiv2.org/tags-xmp-crss.html
   xmp/dc:
     description: commonly used XMP properties (Dublin Core Schema)
-    family: XMP
+    family: Xmp
     regexp: ^dc$
     reference: https://www.exiv2.org/tags-xmp-dc.html
   xmp/dcterms:
     description: qualified Dublin Core XMP properties (Dublin Core Terms Schema)
-    family: XMP
+    family: Xmp
     regexp: ^dcterms$
     reference: https://www.exiv2.org/tags-xmp-dcterms.html
   xmp/digikam:
     description: XMP properties used by digiKam (digiKam Photo Management Schema)
-    family: XMP
+    family: Xmp
     regexp: ^digiKam$
     reference: https://www.exiv2.org/tags-xmp-digiKam.html
   xmp/dm:
     description: XMP properties used by the Adobe dynamic media group (XMP Dynamic Media Schema)
-    family: XMP
+    family: Xmp
     regexp: ^xmpDM$
     reference: https://www.exiv2.org/tags-xmp-xmpDM.html
   xmp/dwc:
     description: >-
       XMP properties intended to facilitate the sharing of information about biological diversity (Darwin Core Schema)
-    family: XMP
+    family: Xmp
     regexp: ^dwc$
     reference: https://www.exiv2.org/tags-xmp-dwc.html
   xmp/exifcore:
     description: XMP properties defined solely by Exif (Exif Schema for Exif-specific Properties)
-    family: XMP
+    family: Xmp
     regexp: ^exif$
     reference: https://www.exiv2.org/tags-xmp-exif.html
   xmp/exifext:
     description: additional XMP properties defined solely by Exif
-    family: XMP
+    family: Xmp
     regexp: ^exifEX$
     reference: https://www.exiv2.org/tags-xmp-exifEX.html
   xmp/expressionmedia:
     description: Microsoft badged version of the iView Media Pro schema (Microsoft Expression Media Schema)
-    family: XMP
+    family: Xmp
     regexp: ^expressionmedia$
     reference: https://www.exiv2.org/tags-xmp-expressionmedia.html
   xmp/gpano:
     description: >-
       XMP properties that provide information regarding the creation and rendering of a panorama image (Google Photo
       Sphere Schema)
-    family: XMP
+    family: Xmp
     regexp: ^GPano$
     reference: https://www.exiv2.org/tags-xmp-GPano.html
   xmp/iptccore:
     description: IPTC Core XMP properties (IPTC Core Schema)
-    family: XMP
-    regexp: ^Iptc4xmpCore$
+    family: Xmp
+    regexp: ^iptc$
     reference: https://www.exiv2.org/tags-xmp-iptc.html
   xmp/iptcext:
     description: IPTC Extension XMP properties (IPTC Extension Schema)
-    family: XMP
-    regexp: ^Iptc4xmpExt$
+    family: Xmp
+    regexp: ^iptcExt$
     reference: https://www.exiv2.org/tags-xmp-iptcExt.html
   xmp/kipi:
     description: KDE Image Program Interface properties (KDE Image Program Interface Schema)
-    family: XMP
+    family: Xmp
     regexp: ^kipi$
     reference: https://www.exiv2.org/tags-xmp-kipi.html
   xmp/lr:
     description: XMP properties used by Adobe Lightroom (Lightroom Schema)
-    family: XMP
+    family: Xmp
     regexp: ^lr$
     reference: https://www.exiv2.org/tags-xmp-lr.html
   xmp/mediapro:
     description: Photo One Media Pro XMP properties (Photo One Media Pro Schema)
-    family: XMP
+    family: Xmp
     regexp: ^mediapro$
     reference: https://www.exiv2.org/tags-xmp-mediapro.html
   xmp/microsoftphoto:
     description: XMP properties used by Microsoft (Microsoft Photo Schema)
-    family: XMP
+    family: Xmp
     regexp: ^MicrosoftPhoto$
     reference: https://www.exiv2.org/tags-xmp-MicrosoftPhoto.html
   xmp/mm:
     description: XMP properties used by digital asset management (DAM) systems (XMP Media Management Schema)
-    family: XMP
+    family: Xmp
     regexp: ^xmpMM$
     reference: https://www.exiv2.org/tags-xmp-xmpMM.html
   xmp/mp:
     description: XMP properties used to tag individuals in digital photos (Microsoft Photo 1.2 Region Schema)
-    family: XMP
+    family: Xmp
     regexp: ^(MP|MPRI|MPReg)$
     reference: https://www.exiv2.org/tags-xmp-MP.html
   xmp/mwgkw:
     description: XMP properties for hierarchical keywords metadata (Metadata Working Group Keywords Schema)
-    family: XMP
+    family: Xmp
     regexp: ^mwg-kw$
     reference: https://www.exiv2.org/tags-xmp-mwg-kw.html
   xmp/mwgrs:
     description: XMP properties for image region metadata (Metadata Working Group Regions Schema)
-    family: XMP
+    family: Xmp
     regexp: ^mwg-rs$
     reference: https://www.exiv2.org/tags-xmp-mwg-rs.html
   xmp/pdf:
     description: XMP properties used with Adobe PDF documents (Adobe PDF Schema)
-    family: XMP
+    family: Xmp
     regexp: ^pdf$
     reference: https://www.exiv2.org/tags-xmp-pdf.html
   xmp/photoshop:
     description: XMP properties used by Adobe Photoshop (Adobe Photoshop Schema)
-    family: XMP
+    family: Xmp
     regexp: ^photoshop$
     reference: https://www.exiv2.org/tags-xmp-photoshop.html
   xmp/plus:
     description: >-
       XMP properties used for image license metadata in digital files and other documents (PLUS Licence Data Format
       Schema)
-    family: XMP
+    family: Xmp
     regexp: ^plus$
     reference: https://www.exiv2.org/tags-xmp-plus.html
   xmp/rights:
     description: XMP properties related to rights management (XMP Rights Management Schema)
-    family: XMP
+    family: Xmp
     regexp: ^xmpRights$
     reference: https://www.exiv2.org/tags-xmp-xmpRights.html
   xmp/tiff:
     description: XMP properties for TIFF-derived data (Exif Schema for TIFF Properties)
-    family: XMP
+    family: Xmp
     regexp: ^tiff$
     reference: https://www.exiv2.org/tags-xmp-tiff.html
   xmp/tpg:
     description: XMP properties for text appearing on a page in a document
-    family: XMP
+    family: Xmp
     regexp: ^xmpTPg$
     reference: https://www.exiv2.org/tags-xmp-xmpTPg.html

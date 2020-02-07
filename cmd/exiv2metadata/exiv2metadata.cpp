@@ -136,7 +136,22 @@ json_t *dumpXMPNamespacesToJSON (void)
 
                if (namespaceJSON != NULL)
                {
-                    json_object_set(root, nsMapping.first.c_str(), namespaceJSON);
+                    std::string name = nsMapping.first;
+
+                    // Exiv2 uses different key names for Iptc4xmpCore and Iptc4xmpExt, so we'll translate those here in
+                    // order to make later code generation simpler.
+
+                    if (name == "Iptc4xmpCore")
+                    {
+                         name = "iptc";
+                    }
+
+                    else if (name == "Iptc4xmpExt")
+                    {
+                         name = "iptcExt";
+                    }
+
+                    json_object_set(root, name.c_str(), namespaceJSON);
                }
           }
 
@@ -156,8 +171,8 @@ void dumpMetadataToJSON (void)
      json_t *root = json_object();
 
      json_object_set(root, "Exif", dumpExifGroupsToJSON());
-     json_object_set(root, "IPTC", dumpIPTCDataSetsToJSON());
-     json_object_set(root, "XMP", dumpXMPNamespacesToJSON());
+     json_object_set(root, "Iptc", dumpIPTCDataSetsToJSON());
+     json_object_set(root, "Xmp", dumpXMPNamespacesToJSON());
 
      output = json_dumps(root, JSON_INDENT(2) | JSON_SORT_KEYS);
 

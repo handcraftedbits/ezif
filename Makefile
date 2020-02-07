@@ -113,7 +113,7 @@ helpers_test: helpers $(DIR_HELPER_EXIF)/exif_test.go \
 	$(DIR_HELPER_XMP)/tpg/tpg_test.go
 
 test: helpers_test
-	$(CMD_DOCKER_RUN) go test ./helper/iptc -run TestKeywords
+	$(CMD_DOCKER_RUN) go test ./...
 
 # File targets
 

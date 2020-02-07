@@ -22,6 +22,7 @@ import (
 
 type GeneratedTestContext struct {
 	AccessorFunc func(ezif.ImageMetadata) helper.Accessor
+	Family       types.Family
 	IsSlice      bool
 	Name         string
 	TypeID       types.ID
@@ -60,6 +61,11 @@ type typeInfo struct {
 	emptyValue interface{}
 }
 
+type xmpLangAltEntry struct {
+	language string
+	value    string
+}
+
 //
 // Private variables
 //
@@ -80,6 +86,8 @@ var (
 
 	// TODO: 0 for empty numbers, right or wrong?  Maybe see if there's a better way to handle empty values.
 	// TODO: pretty sure max/min for rationals isn't right.
+	// TODO: for randomStringOfLength(), should probably make a function that pre-generates a bunch of long random
+	//   strings, and have each invocation cycle through them.
 	typeInfos = map[types.ID]typeInfo{
 		types.IDAsciiString:      {randomStringOfLength(defaultValueLength), randomStringOfLength(1), ""},
 		types.IDComment:          {randomStringOfLength(defaultValueLength), randomStringOfLength(1), ""},
@@ -101,8 +109,8 @@ var (
 		types.IDXMPBag:           {randomStringOfLength(defaultValueLength), randomStringOfLength(1), ""},
 		types.IDXMPSeq:           {randomStringOfLength(defaultValueLength), randomStringOfLength(1), ""},
 		types.IDXMPText:          {randomStringOfLength(defaultValueLength), randomStringOfLength(1), ""},
-		types.IDXMPLangAlt: {types.NewXMPLangAlt("en", randomStringOfLength(defaultValueLength)),
-			types.NewXMPLangAlt("en", randomStringOfLength(1)), nil},
+		types.IDXMPLangAlt: {xmpLangAltEntry{"en", randomStringOfLength(defaultValueLength)},
+			xmpLangAltEntry{"en", randomStringOfLength(1)}, nil},
 	}
 )
 
@@ -118,28 +126,53 @@ func expectEqualValues(t *testing.T, typeID types.ID, expected []interface{}, ac
 	require.NotNil(t, actual)
 	require.Equal(t, len(expected), len(actual))
 
-	// Unfortunately we can't use require.Equal() directly on the two lists because big.Rat values can't necessarily be
-	// compared on a field-by-field basis -- there seems to be some sort of constant value replacement for the
-	// denominator that occurs (seemingly at random!) that throws everything off.  So we have to use big.Rat.Cmp() in
-	// that case.
-
 	for i := 0; i < len(expected); i++ {
-		if typeID == types.IDSignedRational || typeID == types.IDUnsignedRational {
+		switch typeID {
+		case types.IDSignedRational, types.IDUnsignedRational:
+			// Unfortunately we can't use require.Equal() directly on the two lists because big.Rat values can't
+			// necessarily be compared on a field-by-field basis -- there seems to be some sort of constant value
+			// replacement for the denominator that occurs (seemingly at random!) that throws everything off.  So we
+			// have to use big.Rat.Cmp() in that case.
+
 			require.True(t, expected[i].(*big.Rat).Cmp(actual[i].(*big.Rat)) == 0, fmt.Sprintf("value at index %d "+
 				"does not equal expected value", i))
-		} else {
+
+		case types.IDXMPLangAlt:
+			var entry = expected[i].(xmpLangAltEntry)
+			var resultMap = actual[0].(map[string]string)
+
+			// The simple lang alt entry we use in testing is not the same as types.XMPLangAlt, so a manual conversion
+			// is necessary.
+
+			require.NotNil(t, resultMap[entry.language], fmt.Sprintf("XMP lang alt does not contain value for "+
+				"language '%s'", entry.language))
+			require.Equal(t, entry.value, resultMap[entry.language], fmt.Sprintf("XMP lang alt value for language "+
+				"'%s' does not match expected value", entry.language))
+
+		default:
 			require.Equal(t, expected[i], actual[i], fmt.Sprintf("value at index %d does not equal expected value", i))
 		}
 	}
 }
 
 func getMethodFromAccessor(accessor helper.Accessor, name string) reflect.Value {
-	return reflect.ValueOf(accessor).MethodByName(name)
+	var value = reflect.ValueOf(accessor)
+
+	if value == reflect.ValueOf(nil) {
+		return value
+	}
+
+	return value.MethodByName(name)
 }
 
 func getRawValueFromAccessor(accessor helper.Accessor) []interface{} {
 	var kind reflect.Kind
 	var method = getMethodFromAccessor(accessor, "Raw")
+
+	if method == reflect.ValueOf(nil) {
+		return nil
+	}
+
 	var result = method.Call([]reflect.Value{})
 	var value = result[0]
 
@@ -210,6 +243,7 @@ func testGetMissingValueFromHelper(t *testing.T, context *GeneratedTestContext) 
 		context.Name)
 }
 
+// TODO: no maxBytes/minBytes support!
 func testGetValueFromHelper(t *testing.T, exiv2 *externalExiv2Impl, context *GeneratedTestContext,
 	valuesToSet []interface{}) {
 	var err error
@@ -220,15 +254,31 @@ func testGetValueFromHelper(t *testing.T, exiv2 *externalExiv2Impl, context *Gen
 
 	// Write the metadata using an external copy of Exiv2 that's known to produce good results...
 
-	if context.IsSlice && (context.TypeID == types.IDIPTCDate || context.TypeID == types.IDIPTCString) {
-		// An IPTC date or string value that's marked as "repeatable" is a special case.  We can't just provide all the
-		// values in a single "set" command, we have to "add" the metadata property with a single value repeatedly.
+	if context.IsSlice && (context.Family == types.FamilyIPTC) {
+		if context.TypeID == types.IDUndefined {
+			// An undefined IPTC type needs to be set with a single "set" command.
 
-		for _, value := range valuesToSet {
-			exiv2.Add(context.Name, []interface{}{value})
+			exiv2.Set(context.Name, valuesToSet)
+		} else {
+			// An IPTC value that's marked as "repeatable" is a special case.  We can't just provide all the values in a
+			// single "set" command, we have to "add" the metadata property with a single value repeatedly.
+
+			for _, value := range valuesToSet {
+				exiv2.Add(context.Name, []interface{}{value})
+			}
 		}
 	} else {
-		exiv2.Set(context.Name, valuesToSet)
+		if context.Family == types.FamilyXMP {
+			// For XMP values, we need to use multiple "set" commands.
+
+			for _, value := range valuesToSet {
+				exiv2.Set(context.Name, []interface{}{value})
+			}
+		} else {
+			// For Exif values, we have to do everything in a single "set" command.
+
+			exiv2.Set(context.Name, valuesToSet)
+		}
 	}
 
 	err, stdOut, stdErr = exiv2.execute()

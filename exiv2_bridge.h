@@ -21,10 +21,11 @@ typedef struct valueHolder
      int dayValue;
      double doubleValue;
      int hourValue;
+     const char *langValue;
      long longValue;
      int minuteValue;
      int monthValue;
-     const char *strValue;
+     char *strValue;
      uint32_t rationalValueD;
      uint32_t rationalValueN;
      int secondValue;

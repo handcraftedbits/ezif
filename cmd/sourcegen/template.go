@@ -102,7 +102,6 @@ import (
 )
 
 {{- $disabledHelpers := .DisabledHelpers }}
-{{- $familyName := .FamilyName -}}
 {{- $functionMappings := .FunctionMappings }}
 
 //
@@ -113,14 +112,14 @@ import (
 	{{- $functionInfo := index $functionMappings . }}
 	
 	{{- if IsHelperEnabled $functionInfo $disabledHelpers }}
-		// {{ . }} is used to get or set the "{{ $functionInfo.Tag.Label }}" {{ $familyName }} metadata property, ` +
-	`which is described as: "{{ $functionInfo.Tag.Description | FixDescription }}."
+		// {{ . }} is used to get or set the "{{ $functionInfo.Tag.Label }}" {{ MetadataName $functionInfo }} ` +
+	`metadata property, which is described as: "{{ $functionInfo.Tag.Description | FixDescription }}."
 		//
 		// See the Exiv2 documentation regarding key "{{ $functionInfo.FullTagName }}" for more information.
 		//
 		// Note that this function will return nil if the image metadata does not contain this property.
-		func {{ . }} (metadata ezif.ImageMetadata) helper.{{ ReturnType $familyName $functionInfo }}Accessor {
-			return internal.New{{ ReturnType $familyName $functionInfo }}Accessor(metadata.{{ $familyName }}(), ` +
+		func {{ . }} (metadata ezif.ImageMetadata) helper.{{ ReturnType $functionInfo }}Accessor {
+			return internal.New{{ ReturnType $functionInfo }}Accessor(metadata.{{ MetadataName $functionInfo }}(), ` +
 	`"{{ $functionInfo.FullTagName }}")
 		}
 	{{ end -}}
@@ -142,7 +141,6 @@ import (
 
 {{- $disabledHelpers := .DisabledHelpers }}
 {{- $disabledTests := .DisabledTests }}
-{{- $familyName := .FamilyName -}}
 {{- $functionMappings := .FunctionMappings }}
 
 //
@@ -158,7 +156,8 @@ import (
 				AccessorFunc: func(metadata ezif.ImageMetadata) helper.Accessor {
 					return {{ . }}(metadata)
 				},
-				IsSlice: {{ IsSlice $familyName $functionInfo }},
+				Family: types.Family{{ MetadataName $functionInfo }},
+				IsSlice: {{ IsSlice $functionInfo }},
 				Name: "{{ $functionInfo.FullTagName }}",
 				TypeID: types.{{ $functionInfo.Tag.TypeID }},
 			})
