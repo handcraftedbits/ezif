@@ -1,6 +1,6 @@
 # Variables
 
-CMD_DOCKER_RUN=docker run -it --rm -v $(DIR_BASE):/ezif $(DOCKER_IMAGE)
+CMD_DOCKER_RUN=docker run -it --rm -v $(DIR_BASE):/ezif $(DOCKER_OPTS) $(DOCKER_IMAGE)
 CMD_EXIV2METADATA_RUN=$(CMD_DOCKER_RUN) go run ./cmd/exiv2metadata
 CMD_SOURCEGEN_ACCESSOR_RUN=go run $(DIR_CMD_SOURCEGEN)
 CMD_SOURCEGEN_HELPER_RUN=$(CMD_SOURCEGEN_RUN) helper -m $(FILE_EXIV2_METADATA)
@@ -24,10 +24,18 @@ FILE_DOCKER_BUILT=$(DIR_BASE).docker-built
 FILE_EXIV2_METADATA=$(DIR_BASE).exiv2metadata.json
 FILE_SOURCEGEN_CONFIG=$(DIR_BASE).sourcegen.yaml
 
+DOCKER_OPTS=
 # A couple libpthread symbols seem to be marked as weak, causing a segfault when run in a non-musl environment.
 LDFLAGS=-ldflags "-linkmode external -extldflags '-Wl,-u,pthread_mutexattr_init -Wl,-u,pthread_mutexattr_destroy -Wl,-u,pthread_mutexattr_settype -static'"
-
+TEST_OPTS=
 VERSION=0.9.0
+
+# Conditionals
+
+ifdef EZIF_DEV
+DOCKER_OPTS+=-v $(DIR_BASE).gocache:/root/.cache/go-build -e CLICOLOR_FORCE=1 -e EZIF_LOG_LEVEL=debug
+TEST_OPTS+=-v
+endif
 
 # Phony/special targets
 
@@ -113,7 +121,7 @@ helpers_test: helpers $(DIR_HELPER_EXIF)/exif_test.go \
 	$(DIR_HELPER_XMP)/tpg/tpg_test.go
 
 test: helpers_test
-	$(CMD_DOCKER_RUN) go test ./...
+	$(CMD_DOCKER_RUN) go test $(TEST_OPTS) ./...
 
 # File targets
 
@@ -128,10 +136,8 @@ $(DIR_HELPER)/%_test.go: $(FILE_EXIV2_METADATA) $(FILE_SOURCEGEN_CONFIG) $(wildc
 	mkdir -p $(dir $@)
 	$(CMD_SOURCEGEN_HELPER_RUN) -g $(patsubst %/,%,$(dir $*)) -t > $@
 $(FILE_ACCESSOR_IMPL): $(FILE_SOURCEGEN_CONFIG) $(wildcard $(DIR_CMD_SOURCEGEN)/*)
-	mkdir -p $(dir $@)
 	$(CMD_SOURCEGEN_ACCESSOR_RUN) accessor -i -p helper/internal > $@
 $(FILE_ACCESSOR_INTF): $(FILE_SOURCEGEN_CONFIG) $(wildcard $(DIR_CMD_SOURCEGEN)/*)
-	mkdir -p $(dir $@)
 	$(CMD_SOURCEGEN_ACCESSOR_RUN) accessor -p helper > $@
 
 $(FILE_EXIV2_METADATA): $(wildcard $(DIR_CMD_EXIV2METADATA)/*) $(FILE_DOCKER_BUILT)

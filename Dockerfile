@@ -1,9 +1,8 @@
-FROM alpine:latest AS cdeps
+FROM alpine:3.10 AS cdeps
 MAINTAINER HandcraftedBits <opensource@handcraftedbits.com>
 
 ENV DIR_EXIV2=/tmp/exiv2
 ENV DIR_EXPAT=/tmp/expat
-ENV DIR_GETTEXT=/tmp/gettext
 ENV DIR_JANSSON=/tmp/jansson
 ENV DIR_PCRE=/tmp/pcre
 ENV DIR_SWIG=/tmp/swig
@@ -11,7 +10,6 @@ ENV DIR_ZLIB=/tmp/zlib
 
 ENV VERSION_EXIV2=0.27.2
 ENV VERSION_EXPAT=R_2_2_7/expat-2.2.7
-ENV VERSION_GETTEXT=0.20.1
 ENV VERSION_JANSSON=2.12
 ENV VERSION_PCRE=8.43
 ENV VERSION_SWIG=4.0.1
@@ -25,12 +23,6 @@ RUN mkdir -p ${DIR_EXPAT} && \
     -C ${DIR_EXPAT} --strip-components 1 && \
   cd ${DIR_EXPAT} && \
   ./configure --disable-shared && \
-  make install
-RUN mkdir -p ${DIR_GETTEXT} && \
-  curl -L https://ftp.gnu.org/pub/gnu/gettext/gettext-${VERSION_GETTEXT}.tar.gz | tar -xzvf - -C ${DIR_GETTEXT} \
-    --strip-components 1 && \
-  cd ${DIR_GETTEXT} && \
-  ./configure --enable-shared=no && \
   make install
 RUN mkdir -p ${DIR_PCRE} && \
   curl -L https://ftp.pcre.org/pub/pcre/pcre-${VERSION_PCRE}.tar.gz | tar -xzvf - -C ${DIR_PCRE} \
@@ -48,7 +40,7 @@ RUN mkdir -p ${DIR_EXIV2} && \
     --strip-components 1 && \
   cd ${DIR_EXIV2} &&\
   cmake . -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_LIBDIR=lib \
-    -DEXIV2_BUILD_EXIV2_COMMAND=ON -DEXIV2_BUILD_SAMPLES=OFF -DEXIV2_ENABLE_NLS=ON -DEXIV2_ENABLE_VIDEO=ON && \
+    -DEXIV2_BUILD_EXIV2_COMMAND=ON -DEXIV2_BUILD_SAMPLES=OFF -DEXIV2_ENABLE_NLS=OFF -DEXIV2_ENABLE_VIDEO=ON && \
   cmake --build . && \
   make install
 RUN mkdir -p ${DIR_JANSSON} && \

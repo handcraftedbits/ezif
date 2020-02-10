@@ -135,7 +135,7 @@ import (
 
 	"golang.handcraftedbits.com/ezif"
 	"golang.handcraftedbits.com/ezif/helper"
-	"golang.handcraftedbits.com/ezif/helper/internal"
+	eziftest "golang.handcraftedbits.com/ezif/helper/internal/testing"
 	"golang.handcraftedbits.com/ezif/types"
 )
 
@@ -152,7 +152,7 @@ import (
 	
 	{{- if and (IsHelperEnabled $functionInfo $disabledHelpers) (IsTestEnabled $functionInfo $disabledTests) }}
 		func Test{{ . }} (t *testing.T) {
-			internal.GeneratedTests(t, &internal.GeneratedTestContext{
+			eziftest.GeneratedTests(t, &eziftest.GeneratedTestContext{
 				AccessorFunc: func(metadata ezif.ImageMetadata) helper.Accessor {
 					return {{ . }}(metadata)
 				},

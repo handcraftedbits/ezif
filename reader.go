@@ -1,7 +1,7 @@
 package ezif // import "golang.handcraftedbits.com/ezif"
 
 /*
-#cgo LDFLAGS: -lexiv2 -lexiv2-xmp -lexpat -lintl -lz
+#cgo LDFLAGS: -lexiv2 -lexiv2-xmp -lexpat -lz
 
 #include <stdlib.h>
 
@@ -16,7 +16,9 @@ import (
 	"unsafe"
 
 	gopointer "github.com/mattn/go-pointer"
+	log "github.com/sirupsen/logrus"
 
+	"golang.handcraftedbits.com/ezif/internal"
 	"golang.handcraftedbits.com/ezif/types"
 )
 
@@ -37,6 +39,12 @@ func ReadImageMetadata(filename string) (ImageMetadata, error) {
 
 	err = cReadImageMetadata(filename, &readHandlers{
 		onDatumEnd: func(familyName string) {
+			if internal.Log.IsLevelEnabled(log.DebugLevel) {
+				internal.Log.WithFields(log.Fields{
+					"name": string(datum.family) + "." + datum.groupName + "." + datum.tagName,
+				}).Debug("datum end")
+			}
+
 			switch types.Family(familyName) {
 			case types.FamilyExif:
 				imageMetadata.exifMetadata.add(datum, values)
@@ -51,6 +59,17 @@ func ReadImageMetadata(filename string) (ImageMetadata, error) {
 
 		onDatumStart: func(familyName, groupName, tagName string, typeId int, label, interpretedValue string,
 			numValues int, repeatable bool) {
+			if internal.Log.IsLevelEnabled(log.DebugLevel) {
+				internal.Log.WithFields(log.Fields{
+					"interpretedValue": interpretedValue,
+					"label":            label,
+					"name":             familyName + "." + groupName + "." + tagName,
+					"numValues":        numValues,
+					"repeatable":       repeatable,
+					"typeId":           types.ID(typeId),
+				}).Debug("datum start")
+			}
+
 			datum = newDatum(types.Family(familyName), groupName, tagName, types.ID(typeId), label, interpretedValue,
 				repeatable)
 			index = 0
@@ -59,6 +78,13 @@ func ReadImageMetadata(filename string) (ImageMetadata, error) {
 
 		onValue: func(valueHolder *C.struct_valueHolder) {
 			values[index] = convertValueFromValueHolder(datum.TypeID(), valueHolder)
+
+			if internal.Log.IsLevelEnabled(log.DebugLevel) {
+				internal.Log.WithFields(log.Fields{
+					"name":  string(datum.family) + "." + datum.groupName + "." + datum.tagName,
+					"value": values[index],
+				}).Debug("datum value encountered")
+			}
 
 			index++
 		},
@@ -169,6 +195,12 @@ func cReadImageMetadata(filename string, handlers *readHandlers) error {
 
 	defer C.free(unsafe.Pointer(cFilename))
 	defer gopointer.Unref(rhPointer)
+
+	if log.IsLevelEnabled(log.InfoLevel) {
+		internal.Log.WithFields(log.Fields{
+			"filename": filename,
+		}).Info("reading image metadata from file")
+	}
 
 	C.readImageMetadata(cFilename, &cExiv2Error, &cValueHolder, &cReadHandlers, rhPointer)
 

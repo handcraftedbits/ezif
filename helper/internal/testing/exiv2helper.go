@@ -1,4 +1,4 @@
-package internal // import "golang.handcraftedbits.com/ezif/helper/internal"
+package testing // import "golang.handcraftedbits.com/ezif/internal/testing"
 
 import (
 	"bytes"
@@ -7,6 +7,10 @@ import (
 	"math/big"
 	"os"
 	"os/exec"
+
+	log "github.com/sirupsen/logrus"
+
+	"golang.handcraftedbits.com/ezif/internal"
 )
 
 //
@@ -62,6 +66,13 @@ func (exiv2 *externalExiv2Impl) execute() (error, string, string) {
 
 	command.Stderr = &stdErr
 	command.Stdout = &stdOut
+
+	if internal.Log.IsLevelEnabled(log.DebugLevel) {
+		internal.Log.WithFields(log.Fields{
+			"args": args,
+			"path": command.Path,
+		}).Debug("invoking external Exiv2 command")
+	}
 
 	if err := command.Run(); err != nil {
 		return err, stdOut.String(), stdErr.String()

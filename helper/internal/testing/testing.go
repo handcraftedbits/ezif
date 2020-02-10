@@ -1,4 +1,4 @@
-package internal // import "golang.handcraftedbits.com/ezif/helper/internal"
+package testing // import "golang.handcraftedbits.com/ezif/internal/testing"
 
 import (
 	"fmt"

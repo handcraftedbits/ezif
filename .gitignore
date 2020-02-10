@@ -3,6 +3,7 @@
 helper/accessor.go
 helper/internal/accessor.go
 
+.gocache/
 .idea/
 helper/exif/
 helper/iptc/
