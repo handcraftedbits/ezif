@@ -66,6 +66,10 @@ type xmpLangAltEntry struct {
 	value    string
 }
 
+func (langAlt xmpLangAltEntry) String() string {
+	return fmt.Sprintf("lang=\"%s\" %s", langAlt.language, langAlt.value)
+}
+
 //
 // Private variables
 //
