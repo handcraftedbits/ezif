@@ -54,18 +54,22 @@ FROM golang:alpine
 MAINTAINER HandcraftedBits <opensource@handcraftedbits.com>
 
 RUN apk update && \
-  apk add g++ gcc git make musl-dev
+  apk add busybox-extras g++ gcc git make musl-dev
 
 COPY --from=cdeps /usr/local/bin/exiv2 /usr/local/bin
 COPY --from=cdeps /usr/local/include /usr/local/include
 COPY --from=cdeps /usr/local/lib /usr/local/lib
 COPY go.mod /
 COPY go.sum /
+COPY docker/*.sh /
 
 RUN cd / && \
   go mod download && \
   rm /go.*
 
-VOLUME /ezif
+EXPOSE 8080
 
+VOLUME /ezif
 WORKDIR /ezif
+
+ENTRYPOINT ["/bin/sh", "/entrypoint.sh"]

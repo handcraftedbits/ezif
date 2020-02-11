@@ -1,5 +1,5 @@
-.docker-built
 .exiv2metadata.json
+docker/.built
 helper/accessor.go
 helper/internal/accessor.go
 

@@ -10,6 +10,8 @@ DIR_BASE=$(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 DIR_CMD=$(DIR_BASE)cmd
 DIR_CMD_EXIV2METADATA=$(DIR_CMD)/exiv2metadata
 DIR_CMD_SOURCEGEN=$(DIR_CMD)/sourcegen
+DIR_DOCKER=$(DIR_BASE)docker
+DIR_GOCACHE=$(DIR_BASE).gocache
 DIR_HELPER=$(DIR_BASE)helper
 DIR_HELPER_EXIF=$(DIR_HELPER)/exif
 DIR_HELPER_IPTC=$(DIR_HELPER)/iptc
@@ -19,37 +21,40 @@ DOCKER_IMAGE=handcraftedbits/ezif-build:$(VERSION)
 
 FILE_ACCESSOR_IMPL=$(DIR_HELPER)/internal/accessor.go
 FILE_ACCESSOR_INTF=$(DIR_HELPER)/accessor.go
-FILE_DOCKERFILE=$(DIR_BASE)Dockerfile
-FILE_DOCKER_BUILT=$(DIR_BASE).docker-built
+FILE_DOCKERFILE=$(DIR_DOCKER)/Dockerfile
+FILE_DOCKER_BUILT=$(DIR_DOCKER)/.built
 FILE_EXIV2_METADATA=$(DIR_BASE).exiv2metadata.json
 FILE_SOURCEGEN_CONFIG=$(DIR_BASE).sourcegen.yaml
 
-DOCKER_OPTS=
+DOCKER_OPTS=-e OWNER_GID=$(shell id -g) -e OWNER_UID=$(shell id -u) -v $(DIR_GOCACHE):/root/.cache/go-build
+DOCKER_OPTS_LOG=-e CLICOLOR_FORCE=1 -e EZIF_LOG_LEVEL=debug
+EZIF_COVERAGE_PORT?=8080
 # A couple libpthread symbols seem to be marked as weak, causing a segfault when run in a non-musl environment.
 LDFLAGS=-ldflags "-linkmode external -extldflags '-Wl,-u,pthread_mutexattr_init -Wl,-u,pthread_mutexattr_destroy -Wl,-u,pthread_mutexattr_settype -static'"
 TEST_OPTS=
+TEST_PACKAGES=. ./helper/... ./internal ./types
 VERSION=0.9.0
 
 # Conditionals
 
-ifdef EZIF_DEV
-DOCKER_OPTS+=-v $(DIR_BASE).gocache:/root/.cache/go-build -e CLICOLOR_FORCE=1 -e EZIF_LOG_LEVEL=debug
+ifdef EZIF_LOG_DEBUG
 TEST_OPTS+=-v
 endif
 
 # Phony/special targets
 
 .DELETE_ON_ERROR: $(DIR_HELPER)/%.go $(DIR_HELPER)/%_test.go $(FILE_EXIV2_METADATA)
-.PHONY: all clean helpers helpers_test test
+.PHONY: all clean coverage helpers helpers_test test
 
 all: helpers_test
 
-build: helpers
-	$(CMD_DOCKER_RUN) go build ./...
-
 clean:
-	rm -rf $(DIR_HELPER_EXIF) $(DIR_HELPER_IPTC) $(DIR_HELPER_XMP) $(FILE_ACCESSOR) $(FILE_DOCKER_BUILT) \
-		$(FILE_EXIV2_METADATA)
+	rm -rf $(DIR_HELPER_EXIF) $(DIR_HELPER_IPTC) $(DIR_HELPER_XMP) $(DIR_GOCACHE) $(FILE_ACCESSOR_IMPL) \
+		$(FILE_ACCESSOR_INTF) $(FILE_DOCKER_BUILT) $(FILE_EXIV2_METADATA)
+
+coverage: DOCKER_OPTS+=$(DOCKER_OPTS_LOG) -p $(EZIF_COVERAGE_PORT):8080 --entrypoint=""
+coverage: helpers_test
+	$(CMD_DOCKER_RUN) /bin/sh /coverage.sh $(EZIF_COVERAGE_PORT) $(TEST_PACKAGES)
 
 helpers: $(FILE_ACCESSOR_IMPL) \
 	$(FILE_ACCESSOR_INTF) \
@@ -120,8 +125,9 @@ helpers_test: helpers $(DIR_HELPER_EXIF)/exif_test.go \
 	$(DIR_HELPER_XMP)/tiff/tiff_test.go \
 	$(DIR_HELPER_XMP)/tpg/tpg_test.go
 
+test: DOCKER_OPTS+=$(DOCKER_OPTS_LOG)
 test: helpers_test
-	$(CMD_DOCKER_RUN) go test $(TEST_OPTS) ./...
+	$(CMD_DOCKER_RUN) go test $(TEST_OPTS) $(TEST_PACKAGES)
 
 # File targets
 

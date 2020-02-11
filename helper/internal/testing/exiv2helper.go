@@ -93,6 +93,7 @@ func convertValuesToExiv2Format(values []interface{}) string {
 		case *big.Rat:
 			buffer.WriteString(fmt.Sprintf("%v/%v", v.Num(), v.Denom()))
 		case xmpLangAltEntry:
+			// TODO: can this be done with a String() method?
 			buffer.WriteString(fmt.Sprintf("lang=\"%s\" %s", v.language, v.value))
 		default:
 			buffer.WriteString(fmt.Sprintf("%v", v))
