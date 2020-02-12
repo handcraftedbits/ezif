@@ -4,7 +4,7 @@
 
 #include <exiv2/exiv2.hpp>
 
-#include "exiv2_bridge.h"
+#include "exiv2.h"
 
 long getAdjustedCount (Exiv2::TypeId typeId, long count)
 {
@@ -33,7 +33,7 @@ long getAdjustedCount (Exiv2::TypeId typeId, long count)
      return count;
 }
 
-void notifyValueCreated (valueHolder *vh, const Exiv2::Value &value, int index, readHandlers *handlers, void *rhPointer)
+void notifyValueCreated (valueHolder *vh, const Exiv2::Value &value, int index, readHandler *handler, void *rhPointer)
 {
      vh->strValue = NULL;
 
@@ -75,7 +75,7 @@ void notifyValueCreated (valueHolder *vh, const Exiv2::Value &value, int index, 
                     vh->langValue = langAlt.first.c_str();
                     vh->strValue = strdup(langAlt.second.c_str());
 
-                    handlers->vc(rhPointer, vh);
+                    handler->vc(rhPointer, vh);
 
                     free(vh->strValue);
                }
@@ -141,7 +141,7 @@ void notifyValueCreated (valueHolder *vh, const Exiv2::Value &value, int index, 
           }
      }
 
-     handlers->vc(rhPointer, vh);
+     handler->vc(rhPointer, vh);
 
      if (vh->strValue)
      {
@@ -150,7 +150,7 @@ void notifyValueCreated (valueHolder *vh, const Exiv2::Value &value, int index, 
 }
 
 void handleMetadatum (const Exiv2::Metadatum& metadatum, std::ostringstream& buffer, int repeatable, valueHolder *vh,
-     readHandlers *handlers, void *rhPointer)
+     readHandler *handler, void *rhPointer)
 {
      long count = getAdjustedCount(metadatum.typeId(), metadatum.count());
      std::string interpretedValue;
@@ -166,20 +166,20 @@ void handleMetadatum (const Exiv2::Metadatum& metadatum, std::ostringstream& buf
 
      // Notify that new metadata has been encountered.
 
-     handlers->dosc(rhPointer, metadatum.familyName(), metadatum.groupName().c_str(), metadatum.tagName().c_str(),
+     handler->posc(rhPointer, metadatum.familyName(), metadatum.groupName().c_str(), metadatum.tagName().c_str(),
           (int) metadatum.typeId(), metadatum.tagLabel().c_str(), interpretedValue.c_str(), count, repeatable);
 
      for (int i = 0; i < count; ++i)
      {
-          notifyValueCreated(vh, metadatum.value(), i, handlers, rhPointer);
+          notifyValueCreated(vh, metadatum.value(), i, handler, rhPointer);
      }
 
      // Notify that we've finished processing the metadata.
 
-     handlers->doec(rhPointer, metadatum.familyName());
+     handler->poec(rhPointer, metadatum.familyName());
 }
 
-void readImageMetadata (const char *filename, exiv2Error *err, valueHolder *vh, readHandlers *handlers, void *rhPointer)
+void readImageMetadata (const char *filename, exiv2Error *err, valueHolder *vh, readHandler *handler, void *rhPointer)
 {
      try
      {
@@ -190,18 +190,18 @@ void readImageMetadata (const char *filename, exiv2Error *err, valueHolder *vh, 
 
           for (auto &exifDatum : image->exifData())
           {
-               handleMetadatum(exifDatum, buffer, 0, vh, handlers, rhPointer);
+               handleMetadatum(exifDatum, buffer, 0, vh, handler, rhPointer);
           }
 
           for (auto &iptcDatum : image->iptcData())
           {
                handleMetadatum(iptcDatum, buffer, Exiv2::IptcDataSets::dataSetRepeatable(iptcDatum.tag(),
-                    iptcDatum.record()) ? 1 : 0, vh, handlers, rhPointer);
+                    iptcDatum.record()) ? 1 : 0, vh, handler, rhPointer);
           }
 
           for (auto &xmpDatum : image->xmpData())
           {
-               handleMetadatum(xmpDatum, buffer, 0, vh, handlers, rhPointer);
+               handleMetadatum(xmpDatum, buffer, 0, vh, handler, rhPointer);
           }
      }
 

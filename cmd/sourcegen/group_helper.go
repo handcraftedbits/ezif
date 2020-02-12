@@ -9,7 +9,7 @@ import (
 	"strings"
 	"text/template"
 
-	"golang.handcraftedbits.com/ezif/types"
+	"golang.handcraftedbits.com/ezif"
 )
 
 //
@@ -20,7 +20,7 @@ type families map[string]family
 type family map[string]group
 
 type functionInfo struct {
-	Family      types.Family
+	Family      ezif.Family
 	FullTagName string
 	Tag         tag
 }
@@ -49,13 +49,13 @@ type helperTemplateContext struct {
 }
 
 type tag struct {
-	Count       int      `json:"count"`
-	Description string   `json:"description"`
-	Label       string   `json:"label"`
-	MaxBytes    int      `json:"maxBytes"`
-	MinBytes    int      `json:"minBytes"`
-	Repeatable  bool     `json:"repeatable"`
-	TypeID      types.ID `json:"typeID"`
+	Count       int     `json:"count"`
+	Description string  `json:"description"`
+	Label       string  `json:"label"`
+	MaxBytes    int     `json:"maxBytes"`
+	MinBytes    int     `json:"minBytes"`
+	Repeatable  bool    `json:"repeatable"`
+	TypeID      ezif.ID `json:"typeID"`
 }
 
 type typeIDMapping struct {
@@ -72,32 +72,32 @@ var funcMap = template.FuncMap{
 	"IsSlice":         templateFuncIsSlice,
 	"IsTestEnabled":   templateFuncIsTestEnabled,
 	"LastPackage":     templateFuncLastPackage,
-	"MetadataName":    templateFuncMetadataName,
+	"PropertyName":    templateFuncPropertyName,
 	"ReturnType":      templateFuncReturnType,
 }
 
-var typeIDMappings = map[types.ID]typeIDMapping{
-	types.IDAsciiString:      {"String"},
-	types.IDComment:          {"String"},
-	types.IDIPTCDate:         {"Date"},
-	types.IDIPTCString:       {"String"},
-	types.IDIPTCTime:         {"Time"},
-	types.IDSignedByte:       {"SignedByte"},
-	types.IDSignedLong:       {"SignedLong"},
-	types.IDSignedRational:   {"SignedRational"},
-	types.IDSignedShort:      {"SignedShort"},
-	types.IDTIFFDouble:       {"Double"},
-	types.IDTIFFFloat:        {"Float"},
-	types.IDUndefined:        {"Undefined"},
-	types.IDUnsignedByte:     {"UnsignedByte"},
-	types.IDUnsignedLong:     {"UnsignedLong"},
-	types.IDUnsignedRational: {"UnsignedRational"},
-	types.IDUnsignedShort:    {"UnsignedShort"},
-	types.IDXMPAlt:           {"String"},
-	types.IDXMPBag:           {"String"},
-	types.IDXMPLangAlt:       {"StringMap"},
-	types.IDXMPSeq:           {"String"},
-	types.IDXMPText:          {"String"},
+var typeIDMappings = map[ezif.ID]typeIDMapping{
+	ezif.IDAsciiString:      {"String"},
+	ezif.IDComment:          {"String"},
+	ezif.IDIPTCDate:         {"Date"},
+	ezif.IDIPTCString:       {"String"},
+	ezif.IDIPTCTime:         {"Time"},
+	ezif.IDSignedByte:       {"SignedByte"},
+	ezif.IDSignedLong:       {"SignedLong"},
+	ezif.IDSignedRational:   {"SignedRational"},
+	ezif.IDSignedShort:      {"SignedShort"},
+	ezif.IDTIFFDouble:       {"Double"},
+	ezif.IDTIFFFloat:        {"Float"},
+	ezif.IDUndefined:        {"Undefined"},
+	ezif.IDUnsignedByte:     {"UnsignedByte"},
+	ezif.IDUnsignedLong:     {"UnsignedLong"},
+	ezif.IDUnsignedRational: {"UnsignedRational"},
+	ezif.IDUnsignedShort:    {"UnsignedShort"},
+	ezif.IDXMPAlt:           {"String"},
+	ezif.IDXMPBag:           {"String"},
+	ezif.IDXMPLangAlt:       {"StringMap"},
+	ezif.IDXMPSeq:           {"String"},
+	ezif.IDXMPText:          {"String"},
 }
 
 //
@@ -161,22 +161,22 @@ func generateSource(familyName string, f family, packageName string, gc groupCon
 
 func getAdjustedCount(info functionInfo) int {
 	switch info.Family {
-	case types.FamilyExif:
+	case ezif.FamilyExif:
 		var typeID = info.Tag.TypeID
 
-		// Exiv2 seems to treat the ASCII string and comment types as characters instead of full strings because the
+		// Exiv2 seems to treat the ASCII string and comment ezif as characters instead of full strings because the
 		// count values range from "unknown" and "any" to fixed values that don't make sense in context (e.g.,
 		// Exif.Image.DateTime has a count of 20, are there really supposed to be 20 dates?  Probably not, it's more
 		// likely that it's referring to a string with a maximum of 20 characters).  Therefore, we'll disregard count
-		// values for these types.
+		// values for these ezif.
 
-		if typeID == types.IDAsciiString || typeID == types.IDComment {
+		if typeID == ezif.IDAsciiString || typeID == ezif.IDComment {
 			return 1
 		}
 
 		return info.Tag.Count
 
-	case types.FamilyIPTC:
+	case ezif.FamilyIPTC:
 		// IPTC datasets don't have a count value, they're marked as "repeatable" or not.  We can just adjust the count
 		// to 1 or 2 depending on the value of that boolean -- the important thing is whether or not downstream callers
 		// realize they're dealing with a single value or a slice.
@@ -188,7 +188,7 @@ func getAdjustedCount(info functionInfo) int {
 		// An exception to the above rule is that when the "undefined" type (i.e., raw bytes) is used the intention is
 		// for us to generate a byte array as the type, so we'll adjust the count accordingly.
 
-		if info.Tag.TypeID == types.IDUndefined {
+		if info.Tag.TypeID == ezif.IDUndefined {
 			return 2
 		}
 
@@ -196,9 +196,9 @@ func getAdjustedCount(info functionInfo) int {
 	}
 
 	// Anything else is assumed to be XMP metadata, which is multi-valued (we'll just use a count of "2" in that case)
-	// unless the type is types.IDXMPText or types.IDXMPLangAlt (technically multi-valued, but exposed through a map).
+	// unless the type is ezif.IDXMPText or ezif.IDXMPLangAlt (technically multi-valued, but exposed through a map).
 
-	if info.Tag.TypeID == types.IDXMPText || info.Tag.TypeID == types.IDXMPLangAlt {
+	if info.Tag.TypeID == ezif.IDXMPText || info.Tag.TypeID == ezif.IDXMPLangAlt {
 		return 1
 	}
 
@@ -251,7 +251,7 @@ func getFunctionMappings(familyName string, f family, groupNames []string) ([]st
 			sortedFunctionNames = append(sortedFunctionNames, functionName)
 
 			functionMappings[functionName] = functionInfo{
-				Family:      types.Family(familyName),
+				Family:      ezif.Family(familyName),
 				FullTagName: familyName + "." + groupName + "." + tagName,
 				Tag:         f[groupName][tagName],
 			}
@@ -263,7 +263,7 @@ func getFunctionMappings(familyName string, f family, groupNames []string) ([]st
 	return sortedFunctionNames, functionMappings
 }
 
-func getTypeIDMapping(typeID types.ID) typeIDMapping {
+func getTypeIDMapping(typeID ezif.ID) typeIDMapping {
 	if mapping, ok := typeIDMappings[typeID]; ok {
 		return mapping
 	}
@@ -316,9 +316,9 @@ func templateFuncLastPackage(packageName string) string {
 	return packageName[index+1:]
 }
 
-func templateFuncMetadataName(info functionInfo) string {
-	if info.Family == types.FamilyExif {
-		return string(types.FamilyExif)
+func templateFuncPropertyName(info functionInfo) string {
+	if info.Family == ezif.FamilyExif {
+		return string(ezif.FamilyExif)
 	}
 
 	return strings.ToUpper(string(info.Family))

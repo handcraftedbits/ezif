@@ -36,26 +36,26 @@ typedef struct valueHolder
 
 // Function pointer definitions
 
-typedef void (*datumOnEndCallback)(void*, const char *);
-typedef void (*datumOnStartCallback)(void*, const char *, const char *, const char *, int, const char *, const char *,
+typedef void (*propertyOnEndCallback)(void*, const char *);
+typedef void (*propertyOnStartCallback)(void*, const char *, const char *, const char *, int, const char *, const char *,
      int, int);
 typedef void (*valueCallback)(void*, valueHolder*);
 
 // Struct definitions
 
-typedef struct readHandlers
+typedef struct readHandler
 {
-     datumOnEndCallback doec;
-     datumOnStartCallback dosc;
+     propertyOnEndCallback poec;
+     propertyOnStartCallback posc;
      valueCallback vc;
-} readHandlers;
+} readHandler;
 
 // Function definitions
 
-void onDatumEnd(void*, const char*);
-void onDatumStart(void*, const char*, const char*, const char*, int, const char *, const char *, int, int);
+void onPropertyEnd(void*, const char*);
+void onPropertyStart(void*, const char*, const char*, const char*, int, const char *, const char *, int, int);
 void onValue(void*, valueHolder*);
-void readImageMetadata (const char*, exiv2Error*, valueHolder*, readHandlers*, void*);
+void readImageMetadata (const char*, exiv2Error*, valueHolder*, readHandler*, void*);
 
 #ifdef __cplusplus
 }

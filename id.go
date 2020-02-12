@@ -1,11 +1,9 @@
-package types // import "golang.handcraftedbits.com/ezif/types"
+package ezif // import "golang.handcraftedbits.com/ezif"
 
 //
 // Public types
 //
 
-// TODO: investigate if Family can go somewhere else.
-type Family string
 type ID int
 
 func (id ID) String() string {
@@ -82,10 +80,6 @@ func (id ID) String() string {
 //
 
 const (
-	FamilyExif Family = "Exif"
-	FamilyIPTC Family = "Iptc"
-	FamilyXMP  Family = "Xmp"
-
 	IDUnsignedByte     ID = 1
 	IDAsciiString      ID = 2
 	IDUnsignedShort    ID = 3

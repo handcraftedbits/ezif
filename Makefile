@@ -32,7 +32,7 @@ EZIF_COVERAGE_PORT?=8080
 # A couple libpthread symbols seem to be marked as weak, causing a segfault when run in a non-musl environment.
 LDFLAGS=-ldflags "-linkmode external -extldflags '-Wl,-u,pthread_mutexattr_init -Wl,-u,pthread_mutexattr_destroy -Wl,-u,pthread_mutexattr_settype -static'"
 TEST_OPTS=
-TEST_PACKAGES=. ./helper/... ./internal ./types
+TEST_PACKAGES=. ./helper/... ./imageio ./internal
 VERSION=0.9.0
 
 # Conditionals

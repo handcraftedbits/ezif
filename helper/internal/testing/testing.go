@@ -13,7 +13,7 @@ import (
 
 	"golang.handcraftedbits.com/ezif"
 	"golang.handcraftedbits.com/ezif/helper"
-	"golang.handcraftedbits.com/ezif/types"
+	"golang.handcraftedbits.com/ezif/imageio"
 )
 
 //
@@ -21,11 +21,11 @@ import (
 //
 
 type GeneratedTestContext struct {
-	AccessorFunc func(ezif.ImageMetadata) helper.Accessor
-	Family       types.Family
+	AccessorFunc func(ezif.Metadata) helper.Accessor
+	Family       ezif.Family
 	IsSlice      bool
 	Name         string
-	TypeID       types.ID
+	TypeID       ezif.ID
 }
 
 //
@@ -92,28 +92,28 @@ var (
 	// TODO: pretty sure max/min for rationals isn't right.
 	// TODO: for randomStringOfLength(), should probably make a function that pre-generates a bunch of long random
 	//   strings, and have each invocation cycle through them.
-	typeInfos = map[types.ID]typeInfo{
-		types.IDAsciiString:      {randomStringOfLength(defaultValueLength), randomStringOfLength(1), ""},
-		types.IDComment:          {randomStringOfLength(defaultValueLength), randomStringOfLength(1), ""},
-		types.IDIPTCDate:         {types.NewIPTCDate(9999, 12, 31), types.NewIPTCDate(1, 1, 1), nil},
-		types.IDIPTCString:       {randomStringOfLength(defaultValueLength), randomStringOfLength(1), ""},
-		types.IDIPTCTime:         {types.NewIPTCTime(23, 59, 59, 0, 0), types.NewIPTCTime(0, 0, 0, 0, 0), nil},
-		types.IDSignedByte:       {int8(math.MaxInt8), int8(math.MinInt8), int8(0)},
-		types.IDSignedLong:       {int32(math.MaxInt32), int32(math.MinInt32), int32(0)},
-		types.IDSignedRational:   {big.NewRat(math.MaxInt32, 1), big.NewRat(1, math.MaxInt32), nil},
-		types.IDSignedShort:      {int16(math.MaxInt16), int16(math.MinInt16), int16(0)},
-		types.IDTIFFDouble:       {9.0e99, -9.0e99, float64(0)},
-		types.IDTIFFFloat:        {float32(3.4e38), float32(-3.4e38), float32(0)},
-		types.IDUndefined:        {byte(math.MaxUint8), byte(0), byte(0)},
-		types.IDUnsignedByte:     {uint8(math.MaxUint8), uint8(0), uint8(0)},
-		types.IDUnsignedLong:     {uint32(math.MaxUint32), uint32(0), uint32(0)},
-		types.IDUnsignedRational: {big.NewRat(math.MaxUint32, 1), big.NewRat(1, math.MaxUint32), nil},
-		types.IDUnsignedShort:    {uint16(math.MaxUint16), uint16(0), uint16(0)},
-		types.IDXMPAlt:           {randomStringOfLength(defaultValueLength), randomStringOfLength(1), ""},
-		types.IDXMPBag:           {randomStringOfLength(defaultValueLength), randomStringOfLength(1), ""},
-		types.IDXMPSeq:           {randomStringOfLength(defaultValueLength), randomStringOfLength(1), ""},
-		types.IDXMPText:          {randomStringOfLength(defaultValueLength), randomStringOfLength(1), ""},
-		types.IDXMPLangAlt: {xmpLangAltEntry{"en", randomStringOfLength(defaultValueLength)},
+	typeInfos = map[ezif.ID]typeInfo{
+		ezif.IDAsciiString:      {randomStringOfLength(defaultValueLength), randomStringOfLength(1), ""},
+		ezif.IDComment:          {randomStringOfLength(defaultValueLength), randomStringOfLength(1), ""},
+		ezif.IDIPTCDate:         {ezif.NewIPTCDate(9999, 12, 31), ezif.NewIPTCDate(1, 1, 1), nil},
+		ezif.IDIPTCString:       {randomStringOfLength(defaultValueLength), randomStringOfLength(1), ""},
+		ezif.IDIPTCTime:         {ezif.NewIPTCTime(23, 59, 59, 0, 0), ezif.NewIPTCTime(0, 0, 0, 0, 0), nil},
+		ezif.IDSignedByte:       {int8(math.MaxInt8), int8(math.MinInt8), int8(0)},
+		ezif.IDSignedLong:       {int32(math.MaxInt32), int32(math.MinInt32), int32(0)},
+		ezif.IDSignedRational:   {big.NewRat(math.MaxInt32, 1), big.NewRat(1, math.MaxInt32), nil},
+		ezif.IDSignedShort:      {int16(math.MaxInt16), int16(math.MinInt16), int16(0)},
+		ezif.IDTIFFDouble:       {9.0e99, -9.0e99, float64(0)},
+		ezif.IDTIFFFloat:        {float32(3.4e38), float32(-3.4e38), float32(0)},
+		ezif.IDUndefined:        {byte(math.MaxUint8), byte(0), byte(0)},
+		ezif.IDUnsignedByte:     {uint8(math.MaxUint8), uint8(0), uint8(0)},
+		ezif.IDUnsignedLong:     {uint32(math.MaxUint32), uint32(0), uint32(0)},
+		ezif.IDUnsignedRational: {big.NewRat(math.MaxUint32, 1), big.NewRat(1, math.MaxUint32), nil},
+		ezif.IDUnsignedShort:    {uint16(math.MaxUint16), uint16(0), uint16(0)},
+		ezif.IDXMPAlt:           {randomStringOfLength(defaultValueLength), randomStringOfLength(1), ""},
+		ezif.IDXMPBag:           {randomStringOfLength(defaultValueLength), randomStringOfLength(1), ""},
+		ezif.IDXMPSeq:           {randomStringOfLength(defaultValueLength), randomStringOfLength(1), ""},
+		ezif.IDXMPText:          {randomStringOfLength(defaultValueLength), randomStringOfLength(1), ""},
+		ezif.IDXMPLangAlt: {xmpLangAltEntry{"en", randomStringOfLength(defaultValueLength)},
 			xmpLangAltEntry{"en", randomStringOfLength(1)}, nil},
 	}
 )
@@ -122,17 +122,17 @@ var (
 // Private functions
 //
 
-func emptyValue(typeID types.ID) interface{} {
+func emptyValue(typeID ezif.ID) interface{} {
 	return typeInfos[typeID].emptyValue
 }
 
-func expectEqualValues(t *testing.T, typeID types.ID, expected []interface{}, actual []interface{}) {
+func expectEqualValues(t *testing.T, typeID ezif.ID, expected []interface{}, actual []interface{}) {
 	require.NotNil(t, actual)
 	require.Equal(t, len(expected), len(actual))
 
 	for i := 0; i < len(expected); i++ {
 		switch typeID {
-		case types.IDSignedRational, types.IDUnsignedRational:
+		case ezif.IDSignedRational, ezif.IDUnsignedRational:
 			// Unfortunately we can't use require.Equal() directly on the two lists because big.Rat values can't
 			// necessarily be compared on a field-by-field basis -- there seems to be some sort of constant value
 			// replacement for the denominator that occurs (seemingly at random!) that throws everything off.  So we
@@ -141,11 +141,11 @@ func expectEqualValues(t *testing.T, typeID types.ID, expected []interface{}, ac
 			require.True(t, expected[i].(*big.Rat).Cmp(actual[i].(*big.Rat)) == 0, fmt.Sprintf("value at index %d "+
 				"does not equal expected value", i))
 
-		case types.IDXMPLangAlt:
+		case ezif.IDXMPLangAlt:
 			var entry = expected[i].(xmpLangAltEntry)
 			var resultMap = actual[0].(map[string]string)
 
-			// The simple lang alt entry we use in testing is not the same as types.XMPLangAlt, so a manual conversion
+			// The simple lang alt entry we use in testing is not the same as ezif.XMPLangAlt, so a manual conversion
 			// is necessary.
 
 			require.NotNil(t, resultMap[entry.language], fmt.Sprintf("XMP lang alt does not contain value for "+
@@ -197,7 +197,7 @@ func getRawValueFromAccessor(accessor helper.Accessor) []interface{} {
 	return []interface{}{value.Interface()}
 }
 
-func makeSlice(typeID types.ID, length int, valueFunc func(types.ID) interface{}) []interface{} {
+func makeSlice(typeID ezif.ID, length int, valueFunc func(ezif.ID) interface{}) []interface{} {
 	var result = make([]interface{}, length)
 
 	for i := 0; i < length; i++ {
@@ -207,11 +207,11 @@ func makeSlice(typeID types.ID, length int, valueFunc func(types.ID) interface{}
 	return result
 }
 
-func maxValue(typeID types.ID) interface{} {
+func maxValue(typeID ezif.ID) interface{} {
 	return typeInfos[typeID].maxValue
 }
 
-func minValue(typeID types.ID) interface{} {
+func minValue(typeID ezif.ID) interface{} {
 	return typeInfos[typeID].minValue
 }
 
@@ -228,7 +228,7 @@ func randomStringOfLength(length int) string {
 func testGetMissingValueFromHelper(t *testing.T, context *GeneratedTestContext) {
 	var err error
 	var imageFilename string
-	var metadata ezif.ImageMetadata
+	var metadata ezif.Metadata
 
 	imageFilename, err = saveImage(testPNG)
 
@@ -240,7 +240,7 @@ func testGetMissingValueFromHelper(t *testing.T, context *GeneratedTestContext) 
 
 	// Make sure we cannot find the metadata in the temporary image.
 
-	metadata, err = ezif.ReadImageMetadata(imageFilename)
+	metadata, err = imageio.ReadMetadata().FromFile(imageFilename)
 
 	require.Nil(t, err)
 	require.Nil(t, context.AccessorFunc(metadata), "expected not to find metadata with name '%s' in test image",
@@ -251,15 +251,15 @@ func testGetMissingValueFromHelper(t *testing.T, context *GeneratedTestContext) 
 func testGetValueFromHelper(t *testing.T, exiv2 *externalExiv2Impl, context *GeneratedTestContext,
 	valuesToSet []interface{}) {
 	var err error
-	var metadata ezif.ImageMetadata
+	var metadata ezif.Metadata
 	var result []interface{}
 	var stdErr string
 	var stdOut string
 
 	// Write the metadata using an external copy of Exiv2 that's known to produce good results...
 
-	if context.IsSlice && (context.Family == types.FamilyIPTC) {
-		if context.TypeID == types.IDUndefined {
+	if context.IsSlice && (context.Family == ezif.FamilyIPTC) {
+		if context.TypeID == ezif.IDUndefined {
 			// An undefined IPTC type needs to be set with a single "set" command.
 
 			exiv2.Set(context.Name, valuesToSet)
@@ -272,7 +272,7 @@ func testGetValueFromHelper(t *testing.T, exiv2 *externalExiv2Impl, context *Gen
 			}
 		}
 	} else {
-		if context.Family == types.FamilyXMP {
+		if context.Family == ezif.FamilyXMP {
 			// For XMP values, we need to use multiple "set" commands.
 
 			for _, value := range valuesToSet {
@@ -292,7 +292,7 @@ func testGetValueFromHelper(t *testing.T, exiv2 *externalExiv2Impl, context *Gen
 
 	// ...and make sure we can read back the exact same values that we provided.
 
-	metadata, err = ezif.ReadImageMetadata(exiv2.tempFilename)
+	metadata, err = imageio.ReadMetadata().FromFile(exiv2.tempFilename)
 
 	require.Nil(t, err)
 

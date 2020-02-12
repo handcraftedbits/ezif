@@ -13,7 +13,6 @@ import (
 
 	"golang.handcraftedbits.com/ezif"
 	"golang.handcraftedbits.com/ezif/helper"
-	"golang.handcraftedbits.com/ezif/types"
 )
 
 //
@@ -22,13 +21,13 @@ import (
 
 {{ range .AccessorInfos }}
 	// New{{ .Name }}Accessor creates an accessor for image metadata properties with {{ .Type }} values.
-	func New{{ .Name }}Accessor (metadata ezif.Metadata, key string) helper.{{ .Name }}Accessor {
-		if !metadata.HasKey(key) {
+	func New{{ .Name }}Accessor (properties ezif.Properties, key string) helper.{{ .Name }}Accessor {
+		if !properties.HasKey(key) {
 			return nil
 		}
 
 		return &{{ .ImplName }}AccessorImpl{
-			datum: metadata.Get(key),
+			property: properties.Get(key),
 		}
 	}
 {{ end }}
@@ -40,19 +39,19 @@ import (
 {{ range .AccessorInfos }}
 	// helper.{{ .Name }}Accessor implementation
 	type {{ .ImplName }}AccessorImpl struct {
-		datum ezif.Datum
+		property ezif.Property
 	}
 
 	func (accessor *{{ .ImplName }}AccessorImpl) Raw () {{ .Type }} {
 		{{- if .IsSlice }}
-			return accessor.datum.Value().({{ .Type }})
+			return accessor.property.Value().({{ .Type }})
 		{{ else }}
-			return accessor.datum.Value().([]{{ .Type }})[0]
+			return accessor.property.Value().([]{{ .Type }})[0]
 		{{ end -}}
 	}
 
 	func (accessor *{{ .ImplName }}AccessorImpl) Interpreted () string {
-		return accessor.datum.InterpretedValue()
+		return accessor.property.InterpretedValue()
 	}
 {{ end }}
 `
@@ -64,7 +63,7 @@ package {{ .PackageName | LastPackage }} // import "golang.handcraftedbits.com/e
 import (
 	"math/big"
 
-	"golang.handcraftedbits.com/ezif/types"
+	"golang.handcraftedbits.com/ezif"
 )
 
 //
@@ -112,14 +111,14 @@ import (
 	{{- $functionInfo := index $functionMappings . }}
 	
 	{{- if IsHelperEnabled $functionInfo $disabledHelpers }}
-		// {{ . }} is used to get or set the "{{ $functionInfo.Tag.Label }}" {{ MetadataName $functionInfo }} ` +
+		// {{ . }} is used to get or set the "{{ $functionInfo.Tag.Label }}" {{ PropertyName $functionInfo }} ` +
 	`metadata property, which is described as: "{{ $functionInfo.Tag.Description | FixDescription }}."
 		//
 		// See the Exiv2 documentation regarding key "{{ $functionInfo.FullTagName }}" for more information.
 		//
 		// Note that this function will return nil if the image metadata does not contain this property.
-		func {{ . }} (metadata ezif.ImageMetadata) helper.{{ ReturnType $functionInfo }}Accessor {
-			return internal.New{{ ReturnType $functionInfo }}Accessor(metadata.{{ MetadataName $functionInfo }}(), ` +
+		func {{ . }} (metadata ezif.Metadata) helper.{{ ReturnType $functionInfo }}Accessor {
+			return internal.New{{ ReturnType $functionInfo }}Accessor(metadata.{{ PropertyName $functionInfo }}(), ` +
 	`"{{ $functionInfo.FullTagName }}")
 		}
 	{{ end -}}
@@ -136,7 +135,6 @@ import (
 	"golang.handcraftedbits.com/ezif"
 	"golang.handcraftedbits.com/ezif/helper"
 	eziftest "golang.handcraftedbits.com/ezif/helper/internal/testing"
-	"golang.handcraftedbits.com/ezif/types"
 )
 
 {{- $disabledHelpers := .DisabledHelpers }}
@@ -153,13 +151,13 @@ import (
 	{{- if and (IsHelperEnabled $functionInfo $disabledHelpers) (IsTestEnabled $functionInfo $disabledTests) }}
 		func Test{{ . }} (t *testing.T) {
 			eziftest.GeneratedTests(t, &eziftest.GeneratedTestContext{
-				AccessorFunc: func(metadata ezif.ImageMetadata) helper.Accessor {
+				AccessorFunc: func(metadata ezif.Metadata) helper.Accessor {
 					return {{ . }}(metadata)
 				},
-				Family: types.Family{{ MetadataName $functionInfo }},
+				Family: ezif.Family{{ PropertyName $functionInfo }},
 				IsSlice: {{ IsSlice $functionInfo }},
 				Name: "{{ $functionInfo.FullTagName }}",
-				TypeID: types.{{ $functionInfo.Tag.TypeID }},
+				TypeID: ezif.{{ $functionInfo.Tag.TypeID }},
 			})
 		}
 	{{ end -}}

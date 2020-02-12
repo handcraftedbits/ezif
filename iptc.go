@@ -1,6 +1,4 @@
-package types // import "golang.handcraftedbits.com/ezif"
-
-import "C"
+package ezif // import "golang.handcraftedbits.com/ezif"
 
 import (
 	"fmt"
