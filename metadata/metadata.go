@@ -1,42 +1,80 @@
-package imageio // import "golang.handcraftedbits.com/ezif/imageio"
+package metadata // import "golang.handcraftedbits.com/ezif/metadata"
 
 import (
 	"math/big"
 	"sort"
 
-	"golang.handcraftedbits.com/ezif"
+	"golang.handcraftedbits.com/ezif/types"
+)
+
+//
+// Public types
+//
+
+type Family string
+
+type Collection interface {
+	Exif() Properties
+	IPTC() Properties
+	XMP() Properties
+}
+
+type Properties interface {
+	Get(key string) Property
+	HasKey(key string) bool
+	Keys() []string
+}
+
+type Property interface {
+	Family() Family
+	GroupName() string
+	InterpretedValue() string
+	Label() string
+	TagName() string
+	TypeID() types.ID
+	Value() interface{}
+}
+
+//
+// Public constants
+//
+
+const (
+	FamilyExif Family = "Exif"
+	FamilyIPTC Family = "Iptc"
+	FamilyXMP  Family = "Xmp"
 )
 
 //
 // Private types
 //
 
-// ezif.Metadata implementation
-type metadataImpl struct {
+// Collection implementation
+type collectionImpl struct {
 	exifProperties *propertiesImpl
 	iptcProperties *propertiesImpl
 	xmpProperties  *propertiesImpl
 }
 
-func (metadata *metadataImpl) Exif() ezif.Properties {
-	return metadata.exifProperties
+func (collection *collectionImpl) Exif() Properties {
+	return collection.exifProperties
 }
 
-func (metadata *metadataImpl) IPTC() ezif.Properties {
-	return metadata.iptcProperties
+func (collection *collectionImpl) IPTC() Properties {
+	return collection.iptcProperties
 }
 
-func (metadata *metadataImpl) XMP() ezif.Properties {
-	return metadata.xmpProperties
+func (collection *collectionImpl) XMP() Properties {
+	return collection.xmpProperties
 }
 
-// ezif.Properties implementation
+// Properties implementation
 type propertiesImpl struct {
 	propertyMap map[string]*propertyImpl
 	keys        []string
 }
 
-func (properties *propertiesImpl) Get(key string) ezif.Property {
+func (properties *propertiesImpl) Get(key string) Property {
 	return properties.propertyMap[key]
 }
 
@@ -82,7 +120,7 @@ func (properties *propertiesImpl) add(property *propertyImpl, values []interface
 	// to do a similar conversion later on.
 
 	switch property.TypeID() {
-	case ezif.IDAsciiString, ezif.IDComment, ezif.IDXMPAlt, ezif.IDXMPBag, ezif.IDXMPSeq, ezif.IDXMPText:
+	case types.IDAsciiString, types.IDComment, types.IDXMPAlt, types.IDXMPBag, types.IDXMPSeq, types.IDXMPText:
 		var slice = make([]string, valuesLength)
 
 		for i, value := range values {
@@ -91,26 +129,26 @@ func (properties *propertiesImpl) add(property *propertyImpl, values []interface
 
 		property.value = slice
 
-	case ezif.IDIPTCDate:
-		var slice []ezif.IPTCDate
+	case types.IDIPTCDate:
+		var slice []types.IPTCDate
 
 		if !property.repeatable || oldProperty == nil {
-			slice = make([]ezif.IPTCDate, valuesLength)
+			slice = make([]types.IPTCDate, valuesLength)
 		} else {
-			slice = property.value.([]ezif.IPTCDate)
+			slice = property.value.([]types.IPTCDate)
 		}
 
 		for i, value := range values {
 			if !property.repeatable {
-				slice[i] = value.(ezif.IPTCDate)
+				slice[i] = value.(types.IPTCDate)
 			} else {
-				slice = append(slice, value.(ezif.IPTCDate))
+				slice = append(slice, value.(types.IPTCDate))
 			}
 		}
 
 		property.value = slice
 
-	case ezif.IDIPTCString:
+	case types.IDIPTCString:
 		var slice []string
 
 		if !property.repeatable || oldProperty == nil {
@@ -129,16 +167,16 @@ func (properties *propertiesImpl) add(property *propertyImpl, values []interface
 
 		property.value = slice
 
-	case ezif.IDIPTCTime:
-		var slice = make([]ezif.IPTCTime, valuesLength)
+	case types.IDIPTCTime:
+		var slice = make([]types.IPTCTime, valuesLength)
 
 		for i, value := range values {
-			slice[i] = value.(ezif.IPTCTime)
+			slice[i] = value.(types.IPTCTime)
 		}
 
 		property.value = slice
 
-	case ezif.IDSignedByte:
+	case types.IDSignedByte:
 		var slice = make([]int8, valuesLength)
 
 		for i, value := range values {
@@ -147,7 +185,7 @@ func (properties *propertiesImpl) add(property *propertyImpl, values []interface
 
 		property.value = slice
 
-	case ezif.IDSignedLong:
+	case types.IDSignedLong:
 		var slice = make([]int32, valuesLength)
 
 		for i, value := range values {
@@ -156,7 +194,7 @@ func (properties *propertiesImpl) add(property *propertyImpl, values []interface
 
 		property.value = slice
 
-	case ezif.IDSignedShort:
+	case types.IDSignedShort:
 		var slice = make([]int16, valuesLength)
 
 		for i, value := range values {
@@ -165,7 +203,7 @@ func (properties *propertiesImpl) add(property *propertyImpl, values []interface
 
 		property.value = slice
 
-	case ezif.IDSignedRational, ezif.IDUnsignedRational:
+	case types.IDSignedRational, types.IDUnsignedRational:
 		var slice = make([]*big.Rat, valuesLength)
 
 		for i, value := range values {
@@ -174,7 +212,7 @@ func (properties *propertiesImpl) add(property *propertyImpl, values []interface
 
 		property.value = slice
 
-	case ezif.IDTIFFDouble:
+	case types.IDTIFFDouble:
 		var slice = make([]float64, valuesLength)
 
 		for i, value := range values {
@@ -183,7 +221,7 @@ func (properties *propertiesImpl) add(property *propertyImpl, values []interface
 
 		property.value = slice
 
-	case ezif.IDTIFFFloat:
+	case types.IDTIFFFloat:
 		var slice = make([]float32, valuesLength)
 
 		for i, value := range values {
@@ -192,7 +230,7 @@ func (properties *propertiesImpl) add(property *propertyImpl, values []interface
 
 		property.value = slice
 
-	case ezif.IDUndefined:
+	case types.IDUndefined:
 		var slice = make([]byte, valuesLength)
 
 		for i, value := range values {
@@ -201,7 +239,7 @@ func (properties *propertiesImpl) add(property *propertyImpl, values []interface
 
 		property.value = slice
 
-	case ezif.IDUnsignedByte:
+	case types.IDUnsignedByte:
 		var slice = make([]uint8, valuesLength)
 
 		for i, value := range values {
@@ -210,7 +248,7 @@ func (properties *propertiesImpl) add(property *propertyImpl, values []interface
 
 		property.value = slice
 
-	case ezif.IDUnsignedLong:
+	case types.IDUnsignedLong:
 		var slice = make([]uint32, valuesLength)
 
 		for i, value := range values {
@@ -219,7 +257,7 @@ func (properties *propertiesImpl) add(property *propertyImpl, values []interface
 
 		property.value = slice
 
-	case ezif.IDUnsignedShort:
+	case types.IDUnsignedShort:
 		var slice = make([]uint16, valuesLength)
 
 		for i, value := range values {
@@ -230,7 +268,7 @@ func (properties *propertiesImpl) add(property *propertyImpl, values []interface
 
 	// XMPLangAlt is a special case, there's really only a single "value", which is a map.
 
-	case ezif.IDXMPLangAlt:
+	case types.IDXMPLangAlt:
 		var langAlt = make(map[string]string)
 
 		for _, value := range values {
@@ -258,19 +296,19 @@ func (properties *propertiesImpl) finish() {
 	sort.Strings(properties.keys)
 }
 
-// ezif.Property implementation
+// Property implementation
 type propertyImpl struct {
-	family           ezif.Family
+	family           Family
 	groupName        string
 	interpretedValue string
 	label            string
 	repeatable       bool
 	tagName          string
-	typeId           ezif.ID
+	typeId           types.ID
 	value            interface{}
 }
 
-func (property *propertyImpl) Family() ezif.Family {
+func (property *propertyImpl) Family() Family {
 	return property.family
 }
 
@@ -290,7 +328,7 @@ func (property *propertyImpl) TagName() string {
 	return property.tagName
 }
 
-func (property *propertyImpl) TypeID() ezif.ID {
+func (property *propertyImpl) TypeID() types.ID {
 	return property.typeId
 }
 
@@ -311,7 +349,7 @@ type xmpLangAltEntry struct {
 // Private functions
 //
 
-func newProperty(family ezif.Family, groupName, tagName string, typeId ezif.ID, label, interpretedValue string,
+func newProperty(family Family, groupName, tagName string, typeId types.ID, label, interpretedValue string,
 	repeatable bool) *propertyImpl {
 	return &propertyImpl{
 		family:           family,

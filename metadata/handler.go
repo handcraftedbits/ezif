@@ -1,4 +1,4 @@
-package imageio // import "golang.handcraftedbits.com/ezif/imageio"
+package metadata // import "golang.handcraftedbits.com/ezif/metadata"
 
 /*
 #include "exiv2.h"
@@ -13,8 +13,8 @@ import (
 	gopointer "github.com/mattn/go-pointer"
 	log "github.com/sirupsen/logrus"
 
-	"golang.handcraftedbits.com/ezif"
 	"golang.handcraftedbits.com/ezif/internal"
+	"golang.handcraftedbits.com/ezif/types"
 )
 
 //
@@ -23,7 +23,7 @@ import (
 
 type readHandler struct {
 	index    int
-	metadata *metadataImpl
+	metadata *collectionImpl
 	property *propertyImpl
 	values   []interface{}
 }
@@ -41,14 +41,14 @@ func (handler *readHandler) onPropertyEnd(familyName string) {
 		}).Debug("property end")
 	}
 
-	switch ezif.Family(familyName) {
-	case ezif.FamilyExif:
+	switch Family(familyName) {
+	case FamilyExif:
 		handler.metadata.exifProperties.add(handler.property, handler.values)
 
-	case ezif.FamilyIPTC:
+	case FamilyIPTC:
 		handler.metadata.iptcProperties.add(handler.property, handler.values)
 
-	case ezif.FamilyXMP:
+	case FamilyXMP:
 		handler.metadata.xmpProperties.add(handler.property, handler.values)
 	}
 }
@@ -62,13 +62,13 @@ func (handler *readHandler) onPropertyStart(familyName, groupName, tagName strin
 			"name":             familyName + "." + groupName + "." + tagName,
 			"numValues":        numValues,
 			"repeatable":       repeatable,
-			"typeId":           ezif.ID(typeId),
+			"typeId":           types.ID(typeId),
 		}).Debug("property start")
 	}
 
 	handler.index = 0
-	handler.property = newProperty(ezif.Family(familyName), groupName, tagName, ezif.ID(typeId), label,
-		interpretedValue, repeatable)
+	handler.property = newProperty(Family(familyName), groupName, tagName, types.ID(typeId), label, interpretedValue,
+		repeatable)
 	handler.values = make([]interface{}, numValues)
 }
 
@@ -90,55 +90,55 @@ func (handler *readHandler) onValue(valueHolder *C.struct_valueHolder) {
 // Private functions
 //
 
-func convertValueFromValueHolder(typeId ezif.ID, valueHolder *C.struct_valueHolder) interface{} {
+func convertValueFromValueHolder(typeId types.ID, valueHolder *C.struct_valueHolder) interface{} {
 	switch typeId {
-	case ezif.IDAsciiString, ezif.IDComment, ezif.IDIPTCString, ezif.IDXMPAlt, ezif.IDXMPBag, ezif.IDXMPSeq,
-		ezif.IDXMPText:
+	case types.IDAsciiString, types.IDComment, types.IDIPTCString, types.IDXMPAlt, types.IDXMPBag, types.IDXMPSeq,
+		types.IDXMPText:
 		return C.GoString(valueHolder.strValue)
 
-	case ezif.IDInvalid:
+	case types.IDInvalid:
 		// TODO: handle somehow?  Ignore?
 		return nil
 
-	case ezif.IDIPTCDate:
-		return ezif.NewIPTCDate(int(valueHolder.yearValue), time.Month(int(valueHolder.monthValue)),
+	case types.IDIPTCDate:
+		return types.NewIPTCDate(int(valueHolder.yearValue), time.Month(int(valueHolder.monthValue)),
 			int(valueHolder.dayValue))
 
-	case ezif.IDIPTCTime:
-		return ezif.NewIPTCTime(int(valueHolder.hourValue), int(valueHolder.minuteValue), int(valueHolder.secondValue),
+	case types.IDIPTCTime:
+		return types.NewIPTCTime(int(valueHolder.hourValue), int(valueHolder.minuteValue), int(valueHolder.secondValue),
 			int(valueHolder.timezoneHourOffset), int(valueHolder.timezoneMinuteOffset))
 
-	case ezif.IDSignedByte:
+	case types.IDSignedByte:
 		return int8(valueHolder.longValue)
 
-	case ezif.IDSignedLong:
+	case types.IDSignedLong:
 		return int32(valueHolder.longValue)
 
-	case ezif.IDSignedShort:
+	case types.IDSignedShort:
 		return int16(valueHolder.longValue)
 
-	case ezif.IDSignedRational, ezif.IDUnsignedRational:
+	case types.IDSignedRational, types.IDUnsignedRational:
 		return big.NewRat(int64(valueHolder.rationalValueN), int64(valueHolder.rationalValueD))
 
-	case ezif.IDTIFFDouble:
+	case types.IDTIFFDouble:
 		return float64(valueHolder.doubleValue)
 
-	case ezif.IDTIFFFloat:
+	case types.IDTIFFFloat:
 		return float32(valueHolder.doubleValue)
 
-	case ezif.IDUndefined:
+	case types.IDUndefined:
 		return byte(valueHolder.longValue)
 
-	case ezif.IDUnsignedByte:
+	case types.IDUnsignedByte:
 		return uint8(valueHolder.longValue)
 
-	case ezif.IDUnsignedLong:
+	case types.IDUnsignedLong:
 		return uint32(valueHolder.longValue)
 
-	case ezif.IDUnsignedShort:
+	case types.IDUnsignedShort:
 		return uint16(valueHolder.longValue)
 
-	case ezif.IDXMPLangAlt:
+	case types.IDXMPLangAlt:
 		return &xmpLangAltEntry{
 			language: C.GoString(valueHolder.langValue),
 			value:    C.GoString(valueHolder.strValue),
@@ -151,7 +151,7 @@ func convertValueFromValueHolder(typeId ezif.ID, valueHolder *C.struct_valueHold
 
 func newReadHandler() *readHandler {
 	return &readHandler{
-		metadata: &metadataImpl{
+		metadata: &collectionImpl{
 			exifProperties: &propertiesImpl{propertyMap: make(map[string]*propertyImpl)},
 			iptcProperties: &propertiesImpl{propertyMap: make(map[string]*propertyImpl)},
 			xmpProperties:  &propertiesImpl{propertyMap: make(map[string]*propertyImpl)},

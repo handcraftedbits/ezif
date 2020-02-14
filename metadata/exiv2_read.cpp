@@ -2,6 +2,7 @@
 #include <sstream>
 #include <vector>
 
+#include <exiv2/basicio.hpp>
 #include <exiv2/exiv2.hpp>
 
 #include "exiv2.h"
@@ -179,12 +180,11 @@ void handleMetadatum (const Exiv2::Metadatum& metadatum, std::ostringstream& buf
      handler->poec(rhPointer, metadatum.familyName());
 }
 
-void readImageMetadata (const char *filename, exiv2Error *err, valueHolder *vh, readHandler *handler, void *rhPointer)
+void readMetadata (Exiv2::Image::AutoPtr image, exiv2Error *err, valueHolder *vh, readHandler *handler, void *rhPointer)
 {
      try
      {
           std::ostringstream buffer;
-          auto image = Exiv2::ImageFactory::open(filename);
 
           image->readMetadata();
 
@@ -212,3 +212,17 @@ void readImageMetadata (const char *filename, exiv2Error *err, valueHolder *vh, 
      }
 }
 
+void readCollectionFromFile (const char *filename, exiv2Error *err, valueHolder *vh, readHandler *handler,
+     void *rhPointer)
+{
+     Exiv2::BasicIo::AutoPtr ptr(new Exiv2::FileIo(std::string(filename)));
+
+     readMetadata(Exiv2::ImageFactory::open(ptr), err, vh, handler, rhPointer);
+}
+
+void readCollectionFromURL (const char *url, exiv2Error *err, valueHolder *vh, readHandler *handler, void *rhPointer)
+{
+     Exiv2::BasicIo::AutoPtr ptr(new Exiv2::HttpIo(std::string(url)));
+
+     readMetadata(Exiv2::ImageFactory::open(ptr), err, vh, handler, rhPointer);
+}

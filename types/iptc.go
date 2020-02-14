@@ -1,4 +1,4 @@
-package ezif // import "golang.handcraftedbits.com/ezif"
+package types // import "golang.handcraftedbits.com/ezif/types"
 
 import (
 	"fmt"
@@ -14,7 +14,6 @@ type IPTCDate interface {
 
 	Day() int
 	Month() time.Month
-	ToGoTime(iptcTime IPTCTime) time.Time
 	Year() int
 }
 
@@ -25,7 +24,6 @@ type IPTCTime interface {
 	Minute() int
 	Second() int
 	Timezone() *time.Location
-	ToGoTime(date IPTCDate) time.Time
 }
 
 //
@@ -75,11 +73,6 @@ func (date *iptcDateImpl) String() string {
 	return fmt.Sprintf("%04d-%02d-%02d", date.year, date.month, date.day)
 }
 
-func (date *iptcDateImpl) ToGoTime(iptcTime IPTCTime) time.Time {
-	return time.Date(date.year, date.month, date.day, iptcTime.Hour(), iptcTime.Minute(), iptcTime.Second(), 0,
-		iptcTime.Timezone())
-}
-
 func (date *iptcDateImpl) Year() int {
 	return date.year
 }
@@ -113,9 +106,4 @@ func (iptcTime *iptcTimeImpl) String() string {
 
 func (iptcTime *iptcTimeImpl) Timezone() *time.Location {
 	return iptcTime.timezone
-}
-
-func (iptcTime *iptcTimeImpl) ToGoTime(date IPTCDate) time.Time {
-	return time.Date(date.Year(), date.Month(), date.Day(), iptcTime.hour, iptcTime.minute, iptcTime.second, 0,
-		iptcTime.timezone)
 }

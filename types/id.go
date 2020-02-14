@@ -1,4 +1,4 @@
-package ezif // import "golang.handcraftedbits.com/ezif"
+package types // import "golang.handcraftedbits.com/ezif/types"
 
 //
 // Public types

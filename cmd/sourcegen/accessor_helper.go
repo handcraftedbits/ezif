@@ -29,8 +29,8 @@ type accessorTemplateContext struct {
 //
 
 var accessors = map[string]string{
-	"Date":                  "ezif.IPTCDate",
-	"DateSlice":             "[]ezif.IPTCDate",
+	"Date":                  "types.IPTCDate",
+	"DateSlice":             "[]types.IPTCDate",
 	"Double":                "float64",
 	"DoubleSlice":           "[]float64",
 	"Float":                 "float32",
@@ -46,7 +46,7 @@ var accessors = map[string]string{
 	"String":                "string",
 	"StringMap":             "map[string]string",
 	"StringSlice":           "[]string",
-	"Time":                  "ezif.IPTCTime",
+	"Time":                  "types.IPTCTime",
 	"Undefined":             "byte",
 	"UndefinedSlice":        "[]byte",
 	"UnsignedByte":          "uint8",

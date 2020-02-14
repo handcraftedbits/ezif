@@ -1,4 +1,4 @@
-package imageio // import "golang.handcraftedbits.com/ezif/imageio"
+package metadata // import "golang.handcraftedbits.com/ezif/metadata"
 
 /*
 #cgo LDFLAGS: -lexiv2 -lexiv2-xmp -lexpat -lz

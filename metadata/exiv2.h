@@ -55,7 +55,8 @@ typedef struct readHandler
 void onPropertyEnd(void*, const char*);
 void onPropertyStart(void*, const char*, const char*, const char*, int, const char *, const char *, int, int);
 void onValue(void*, valueHolder*);
-void readImageMetadata (const char*, exiv2Error*, valueHolder*, readHandler*, void*);
+void readCollectionFromFile (const char*, exiv2Error*, valueHolder*, readHandler*, void*);
+void readCollectionFromURL (const char*, exiv2Error*, valueHolder*, readHandler*, void*);
 
 #ifdef __cplusplus
 }
